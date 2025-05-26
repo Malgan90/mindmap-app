@@ -8,8 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
-<body>
-    <div id="shortcut-window" class="draggable resizable">
+<body> <!-- Die Klasse 'dark-mode' wird per JS hinzugefügt/entfernt -->
+    <div id="shortcut-window" class="draggable resizable hidden">
         <div class="shortcut-header">
             <h4>Shortcuts</h4>
             <button id="close-shortcut-btn" class="shortcut-close-btn" title="Close Shortcuts">X</button>
@@ -21,7 +21,8 @@
                 <li><strong>Shift+Enter/Tab:</strong> Add Sibling</li>
                 <li><strong>Del/Backspace:</strong> Delete Selected Node</li>
                 <li><strong>Ctrl/Cmd+S:</strong> Save Map (JSON)</li>
-                <li><strong>Ctrl/Cmd+P:</strong> Screenshot</li>
+                <li><strong>Ctrl/Cmd+P:</strong> Copy Screenshot (PNG)</li>
+                <li><strong>Ctrl/Cmd+Shift+P:</strong> Download Screenshot</li>
                 <li><strong>Alt+H:</strong> Show/Hide Shortcuts</li>
             </ul>
         </div>
@@ -32,17 +33,22 @@
         <button id="addRootNodeBtn" title="Add a new main topic (R)">Add Root Node</button>
         <button id="clearMapBtn" title="Remove all nodes from the map">Clear Map</button>
         <button id="downloadMapBtn" title="Save the current mind map structure (Ctrl+S)">Save Map (JSON)</button>
-        <button id="screenshotBtn" title="Create a screenshot (Ctrl+P)">Screenshot</button>
-        <div class="screenshot-options">
-            <input type="checkbox" id="screenshotToClipboardCb" title="Copy screenshot Download file instead of downloading (PNG only)">
-            <label for="screenshotToClipboardCb">Download file</label>
-            <select id="screenshotFormatSelect" title="Choose screenshot format (download only for JPEG/PDF)">
+        
+        <button id="screenshotToClipboardBtn" title="Copy screenshot to clipboard (PNG only) (Ctrl+P)">Copy Screenshot</button>
+        
+        <div class="screenshot-download-options">
+            <button id="downloadScreenshotBtn" title="Download screenshot in selected format (Ctrl+Shift+P)">Download As</button>
+            <select id="screenshotFormatSelect" title="Choose screenshot format for download">
                 <option value="png" selected>PNG</option>
                 <option value="jpeg">JPEG</option>
                 <option value="pdf">PDF</option>
             </select>
         </div>
+
         <button id="toggleShortcutBtn" title="Toggle Shortcuts Visibility (Alt+H)">Shortcuts</button>
+        
+        <button id="toggleDarkModeBtn" title="Toggle Dark Mode">🌙</button> 
+
         <div class="color-settings-toolbar">
             <div class="default-color-pickers">
                 <label for="defaultNodeColor">Node Color:</label>
