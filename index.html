@@ -3,17 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>Easy Mindmap - Your Simple Online Mind Map Tool</title>
-    <meta name="description" content="Create and organize your ideas effortlessly with Easy Mindmap. The intuitive, free online tool for mind maps – perfect for brainstorming, planning, and notes.">
-    
-    <meta property="og:title" content="Easy Mindmap - Create Online Mind Maps">
-    <meta property="og:description" content="Create and organize your ideas effortlessly with Easy Mindmap. The intuitive, free online tool for mind maps.">
-    <meta property="og:url" content="https://easy-mindmap.com/">
-    <meta property="og:type" content="website">
-    
+    <title>Mind Map Creator</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -43,7 +34,7 @@
         <button id="downloadMapBtn" title="Save the current mind map structure (Ctrl+S)">Save Map (JSON)</button>
         <button id="screenshotBtn" title="Create a screenshot (Ctrl+P)">Screenshot</button>
         <div class="screenshot-options">
-            <input type="checkbox" id="screenshotToClipboardCb" title="Toggle between downloading file and copying to clipboard">
+            <input type="checkbox" id="screenshotToClipboardCb" title="Copy screenshot Download file instead of downloading (PNG only)">
             <label for="screenshotToClipboardCb">Download file</label>
             <select id="screenshotFormatSelect" title="Choose screenshot format (download only for JPEG/PDF)">
                 <option value="png" selected>PNG</option>
@@ -52,12 +43,6 @@
             </select>
         </div>
         <button id="toggleShortcutBtn" title="Toggle Shortcuts Visibility (Alt+H)">Shortcuts</button>
-        
-        <div class="size-settings-toolbar">
-            <label>Node Size:</label>
-            <button id="decreaseNodeSizeBtn" title="Decrease size of selected node">-</button>
-            <button id="increaseNodeSizeBtn" title="Increase size of selected node">+</button>
-        </div>
         <div class="color-settings-toolbar">
             <div class="default-color-pickers">
                 <label for="defaultNodeColor">Node Color:</label>
@@ -71,6 +56,7 @@
 
     <div id="mindmap-container" tabindex="0">
         <svg id="mindmap-svg"></svg>
+        <!-- Nodes will be inserted here by JavaScript -->
     </div>
 
     <div id="toast-notification" class="toast"></div>
