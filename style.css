@@ -1,8 +1,8 @@
-/* General Body Styles */
+/* General Body Styles (Dark Mode - Default) */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
-    overflow: hidden; /* Prevent scrollbars unless absolutely necessary */
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -10,18 +10,32 @@ body {
     color: #abb2bf; /* Light text color */
 }
 
+/* Light Mode Styles */
+body.light-mode {
+    background-color: #f0f0f0; /* Light background */
+    color: #333; /* Dark text color */
+}
+
 /* Toolbar Styles */
 #toolbar {
     background-color: #3a3f4a;
     padding: 10px;
     display: flex;
-    flex-wrap: wrap; /* Allow items to wrap to next line if space is limited */
-    gap: 10px; /* Space between toolbar items */
+    flex-wrap: wrap;
+    gap: 10px;
     align-items: center;
     border-bottom: 1px solid #444;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    z-index: 1000; /* Ensure toolbar is above other elements */
+    z-index: 1000;
 }
+
+/* Light Mode Toolbar */
+body.light-mode #toolbar {
+    background-color: #e0e0e0;
+    border-bottom-color: #ccc;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
 
 #toolbar button {
     background-color: #555;
@@ -31,9 +45,9 @@ body {
     padding: 8px 12px;
     cursor: pointer;
     font-size: 14px;
-    transition: background-color 0.2s ease;
-    height: 35px; /* Consistent height for most buttons */
-    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    transition: background-color 0.2s ease, color 0.2s ease;
+    height: 35px;
+    box-sizing: border-box;
 }
 
 #toolbar button:hover {
@@ -44,147 +58,47 @@ body {
     background-color: #333;
 }
 
-/* Screenshot Options Specific Styles */
-.screenshot-options {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    background-color: #4a4f59;
-    border-radius: 5px;
-    padding: 5px 10px;
+/* Light Mode Buttons */
+body.light-mode #toolbar button {
+    background-color: #a0a0a0;
+    color: black;
 }
 
-.screenshot-options label {
-    font-size: 14px;
-    white-space: nowrap; /* Prevent text wrapping */
+body.light-mode #toolbar button:hover {
+    background-color: #c0c0c0;
 }
 
-.screenshot-options input[type="checkbox"] {
-    transform: scale(1.2); /* Slightly enlarge checkbox */
-    margin-right: 5px;
+body.light-mode #toolbar button:active {
+    background-color: #808080;
 }
-
-.screenshot-options select {
-    background-color: #555;
-    color: white;
-    border: 1px solid #666;
-    border-radius: 3px;
-    padding: 3px 5px;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-/* Color Settings Toolbar */
-.color-settings-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background-color: #4a4f59;
-    border-radius: 5px;
-    padding: 5px 10px;
-}
-
-.default-color-pickers {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.color-settings-toolbar label {
-    font-size: 14px;
-    white-space: nowrap;
-}
-
-.color-settings-toolbar input[type="color"] {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    width: 30px;
-    height: 30px;
-    background-color: transparent;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-}
-
-.color-settings-toolbar input[type="color"]::-webkit-color-swatch-wrapper {
-    padding: 0;
-}
-
-.color-settings-toolbar input[type="color"]::-webkit-color-swatch {
-    border: 1px solid #666;
-    border-radius: 3px;
-}
-
-.color-settings-toolbar input[type="color"]::-moz-color-swatch {
-    border: 1px solid #666;
-    border-radius: 3px;
-}
-
-/* NEU: Styles für die Node Size Buttons */
-.size-settings-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 5px; /* Kleiner Abstand zwischen Elementen */
-    background-color: #4a4f59;
-    border-radius: 5px;
-    padding: 5px 10px;
-}
-
-.size-settings-toolbar label {
-    font-size: 14px;
-    white-space: nowrap;
-}
-
-.size-settings-toolbar button {
-    /* Standardmäßig machen wir Buttons klickbar und Text sichtbar */
-    background-color: #555; /* Beispiel-Hintergrundfarbe */
-    color: white; /* Textfarbe für die Symbole */
-    border: none; /* Entfernt den äußeren Rand, da die Toolbar-Regel ihn wieder hinzufügen könnte */
-    border-radius: 5px;
-    padding: 5px 10px; /* Kleinere Polsterung für kompaktere Buttons */
-    font-size: 18px; /* Größer, damit Plus/Minus sichtbar sind */
-    font-weight: bold; /* Damit die Symbole deutlicher sind */
-    cursor: pointer; /* Zeigt an, dass es klickbar ist */
-    transition: background-color 0.2s ease; /* Glatter Übergang beim Hover */
-    height: 35px; /* Angleichen an andere Button-Höhen */
-    width: 35px; /* Gleichmäßiges Quadrat */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.size-settings-toolbar button:hover {
-    background-color: #777; /* Dunkler beim Hover */
-}
-
-.size-settings-toolbar button:active {
-    background-color: #333; /* Noch dunkler beim Klicken */
-}
-/* ENDE NEUE STYLES */
-
 
 /* Mindmap Container Styles */
 #mindmap-container {
-    flex-grow: 1; /* Take up all available space */
+    flex-grow: 1;
     position: relative;
-    overflow: hidden; /* Hide anything outside the SVG area */
-    outline: none; /* Remove focus outline */
+    overflow: hidden;
+    outline: none;
     background-color: #343840; /* Slightly lighter than body background */
 }
 
-#mindmap-svg {
-    width: 100%;
-    height: 100%;
+/* Light Mode Mindmap Container */
+body.light-mode #mindmap-container {
+    background-color: #ffffff; /* White background for light mode */
 }
 
 /* Mindmap Node Styles (SVG) */
 .mindmap-node circle {
-    fill: #add8e6; /* Default node color */
+    fill: #add8e6; /* Default node color (light blue) */
     stroke: black;
     stroke-width: 1;
     cursor: grab;
     transition: fill 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease;
+}
+
+/* Light Mode Node Colors (falls sie anders sein sollen) */
+body.light-mode .mindmap-node circle {
+    fill: #87ceeb; /* Etwas dunkleres Hellblau im Light Mode, um Kontrast zu wahren */
+    stroke: #333; /* Dunklerer Rand im Light Mode */
 }
 
 .mindmap-node circle:hover {
@@ -194,14 +108,20 @@ body {
 
 .mindmap-node text {
     font-family: Arial, sans-serif;
-    font-size: 14px; /* Default font size */
+    font-size: 14px;
     fill: #000000; /* Default text color */
-    user-select: none; /* Prevent text selection */
-    pointer-events: none; /* Allow clicks to pass through to circle */
+    user-select: none;
+    pointer-events: none;
 }
 
+/* Light Mode Text Colors */
+body.light-mode .mindmap-node text {
+    fill: #000000; /* Textfarbe bleibt oft schwarz, aber anpassbar */
+}
+
+
 .mindmap-node.selected circle {
-    stroke: orange; /* Selected node border */
+    stroke: orange;
     stroke-width: 3;
 }
 
@@ -211,9 +131,14 @@ body {
     stroke-width: 2;
 }
 
+/* Light Mode Lines */
+body.light-mode .mindmap-line {
+    stroke: #555; /* Etwas hellere Linien im Light Mode */
+}
+
 /* Toast Notification Styles */
 #toast-notification {
-    visibility: hidden; /* Hidden by default */
+    visibility: hidden;
     min-width: 250px;
     background-color: #333;
     color: #fff;
@@ -221,7 +146,7 @@ body {
     border-radius: 5px;
     padding: 10px;
     position: fixed;
-    z-index: 1001; /* Above toolbar */
+    z-index: 1001;
     left: 50%;
     transform: translateX(-50%);
     bottom: 30px;
@@ -237,17 +162,16 @@ body {
 }
 
 #toast-notification.success {
-    background-color: #4CAF50; /* Green for success */
+    background-color: #4CAF50;
 }
 
 #toast-notification.error {
-    background-color: #f44336; /* Red for error */
+    background-color: #f44336;
 }
 
 #toast-notification.info {
-    background-color: #2196F3; /* Blue for info */
+    background-color: #2196F3;
 }
-
 
 /* Shortcut Window Styles */
 #shortcut-window {
@@ -259,13 +183,19 @@ body {
     border: 1px solid #444;
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    z-index: 2000; /* Ensure it's above everything */
+    z-index: 2000;
     min-width: 250px;
     max-width: 400px;
-    resize: both; /* Allow resizing */
-    overflow: auto; /* Scroll if content overflows during resize */
-    display: none; /* Hidden by default, script shows it */
+    resize: both;
+    overflow: auto;
+    display: none;
     flex-direction: column;
+}
+
+body.light-mode #shortcut-window {
+    background-color: #f0f0f0;
+    border-color: #ccc;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 #shortcut-window.show {
@@ -276,7 +206,7 @@ body {
     background-color: #4a4f59;
     padding: 10px 15px;
     border-bottom: 1px solid #555;
-    cursor: grab; /* Indicates draggable */
+    cursor: grab;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -284,9 +214,18 @@ body {
     border-top-right-radius: 8px;
 }
 
+body.light-mode .shortcut-header {
+    background-color: #e0e0e0;
+    border-bottom-color: #ccc;
+}
+
 .shortcut-header h4 {
     margin: 0;
     color: #e0e0e0;
+}
+
+body.light-mode .shortcut-header h4 {
+    color: #333;
 }
 
 .shortcut-close-btn {
@@ -298,14 +237,22 @@ body {
     padding: 0 5px;
 }
 
+body.light-mode .shortcut-close-btn {
+    color: #333;
+}
+
 .shortcut-close-btn:hover {
-    color: #ff6347; /* Tomato red on hover */
+    color: #ff6347;
 }
 
 .shortcut-content {
     padding: 15px;
     color: #abb2bf;
     line-height: 1.6;
+}
+
+body.light-mode .shortcut-content {
+    color: #555;
 }
 
 .shortcut-content ul {
@@ -319,7 +266,11 @@ body {
 }
 
 .shortcut-content strong {
-    color: #61afef; /* Blue-ish highlight for shortcuts */
+    color: #61afef;
+}
+
+body.light-mode .shortcut-content strong {
+    color: #1a73e8; /* Blau für Light Mode */
 }
 
 .resize-handle {
@@ -329,5 +280,5 @@ body {
     position: absolute;
     bottom: 0;
     right: 0;
-    cursor: se-resize; /* Diagonal resize cursor */
+    cursor: se-resize;
 }
