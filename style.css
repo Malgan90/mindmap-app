@@ -1,4 +1,4 @@
-/* General Body Styles (Dark Mode - Default) */
+/* General Body Styles */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -6,40 +6,26 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background-color: #282c34; /* Dark background */
-    color: #abb2bf; /* Light text color */
-}
-
-/* Light Mode Styles */
-body.light-mode {
-    background-color: #f0f0f0; /* Light background */
-    color: #333; /* Dark text color */
+    background-color: #f0f0f0; /* Helles Grau als Standard */
+    color: #333; /* Dunkler Text */
 }
 
 /* Toolbar Styles */
 #toolbar {
-    background-color: #3a3f4a;
+    background-color: #e0e0e0; /* Helles Grau für Toolbar */
     padding: 10px;
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     align-items: center;
-    border-bottom: 1px solid #444;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    border-bottom: 1px solid #ccc;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     z-index: 1000;
 }
 
-/* Light Mode Toolbar */
-body.light-mode #toolbar {
-    background-color: #e0e0e0;
-    border-bottom-color: #ccc;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-
 #toolbar button {
-    background-color: #555;
-    color: white;
+    background-color: #a0a0a0; /* Grau für Buttons */
+    color: black;
     border: none;
     border-radius: 5px;
     padding: 8px 12px;
@@ -51,25 +37,100 @@ body.light-mode #toolbar {
 }
 
 #toolbar button:hover {
-    background-color: #777;
-}
-
-#toolbar button:active {
-    background-color: #333;
-}
-
-/* Light Mode Buttons */
-body.light-mode #toolbar button {
-    background-color: #a0a0a0;
-    color: black;
-}
-
-body.light-mode #toolbar button:hover {
     background-color: #c0c0c0;
 }
 
-body.light-mode #toolbar button:active {
+#toolbar button:active {
     background-color: #808080;
+}
+
+/* Screenshot Options (Checkbox, Select) */
+.screenshot-options {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #333;
+}
+
+.screenshot-options label {
+    font-size: 14px;
+}
+
+.screenshot-options input[type="checkbox"] {
+    transform: scale(1.2); /* Checkbox etwas vergrößern */
+}
+
+.screenshot-options select {
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: white;
+    color: #333;
+    font-size: 14px;
+}
+
+/* Node Size Settings */
+.size-settings-toolbar, .color-settings-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #333;
+}
+
+.size-settings-toolbar label, .color-settings-toolbar label {
+    font-size: 14px;
+    white-space: nowrap; /* Verhindert Zeilenumbruch */
+}
+
+.size-settings-toolbar button {
+    width: 30px; /* Kleinere Breite für +/- Buttons */
+    height: 30px; /* Kleinere Höhe */
+    padding: 0;
+    line-height: 1; /* Text zentrieren */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px; /* Größere Schrift für +/- */
+}
+
+/* Color Pickers */
+.default-color-pickers {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+input[type="color"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 35px; /* Angemessene Größe für Color Picker */
+    height: 35px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    border-radius: 5px; /* Leicht abgerundet */
+    overflow: hidden; /* Sicherstellen, dass der Farbkreis innerhalb des Rahmens bleibt */
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+    border: 1px solid #ccc;
+    border-radius: 4px; /* Innenkreis auch abrunden */
+}
+
+input[type="color"]::-moz-color-swatch-wrapper {
+    padding: 0;
+}
+
+input[type="color"]::-moz-color-swatch {
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 
 /* Mindmap Container Styles */
@@ -78,27 +139,16 @@ body.light-mode #toolbar button:active {
     position: relative;
     overflow: hidden;
     outline: none;
-    background-color: #343840; /* Slightly lighter than body background */
-}
-
-/* Light Mode Mindmap Container */
-body.light-mode #mindmap-container {
-    background-color: #ffffff; /* White background for light mode */
+    background-color: #ffffff; /* Weißer Hintergrund */
 }
 
 /* Mindmap Node Styles (SVG) */
 .mindmap-node circle {
-    fill: #add8e6; /* Default node color (light blue) */
+    fill: #add8e6; /* Hellblau */
     stroke: black;
     stroke-width: 1;
     cursor: grab;
     transition: fill 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease;
-}
-
-/* Light Mode Node Colors (falls sie anders sein sollen) */
-body.light-mode .mindmap-node circle {
-    fill: #87ceeb; /* Etwas dunkleres Hellblau im Light Mode, um Kontrast zu wahren */
-    stroke: #333; /* Dunklerer Rand im Light Mode */
 }
 
 .mindmap-node circle:hover {
@@ -109,16 +159,10 @@ body.light-mode .mindmap-node circle {
 .mindmap-node text {
     font-family: Arial, sans-serif;
     font-size: 14px;
-    fill: #000000; /* Default text color */
+    fill: #000000; /* Schwarz */
     user-select: none;
     pointer-events: none;
 }
-
-/* Light Mode Text Colors */
-body.light-mode .mindmap-node text {
-    fill: #000000; /* Textfarbe bleibt oft schwarz, aber anpassbar */
-}
-
 
 .mindmap-node.selected circle {
     stroke: orange;
@@ -129,11 +173,6 @@ body.light-mode .mindmap-node text {
 .mindmap-line {
     stroke: black;
     stroke-width: 2;
-}
-
-/* Light Mode Lines */
-body.light-mode .mindmap-line {
-    stroke: #555; /* Etwas hellere Linien im Light Mode */
 }
 
 /* Toast Notification Styles */
@@ -179,10 +218,10 @@ body.light-mode .mindmap-line {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: #3a3f4a;
-    border: 1px solid #444;
+    background-color: #f0f0f0; /* Helles Grau */
+    border: 1px solid #ccc;
     border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     z-index: 2000;
     min-width: 250px;
     max-width: 400px;
@@ -192,20 +231,14 @@ body.light-mode .mindmap-line {
     flex-direction: column;
 }
 
-body.light-mode #shortcut-window {
-    background-color: #f0f0f0;
-    border-color: #ccc;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
 #shortcut-window.show {
     display: flex;
 }
 
 .shortcut-header {
-    background-color: #4a4f59;
+    background-color: #e0e0e0; /* Helles Grau */
     padding: 10px 15px;
-    border-bottom: 1px solid #555;
+    border-bottom: 1px solid #ccc;
     cursor: grab;
     display: flex;
     justify-content: space-between;
@@ -214,31 +247,18 @@ body.light-mode #shortcut-window {
     border-top-right-radius: 8px;
 }
 
-body.light-mode .shortcut-header {
-    background-color: #e0e0e0;
-    border-bottom-color: #ccc;
-}
-
 .shortcut-header h4 {
     margin: 0;
-    color: #e0e0e0;
-}
-
-body.light-mode .shortcut-header h4 {
     color: #333;
 }
 
 .shortcut-close-btn {
     background: none;
     border: none;
-    color: #e0e0e0;
+    color: #333;
     font-size: 1.2em;
     cursor: pointer;
     padding: 0 5px;
-}
-
-body.light-mode .shortcut-close-btn {
-    color: #333;
 }
 
 .shortcut-close-btn:hover {
@@ -247,12 +267,8 @@ body.light-mode .shortcut-close-btn {
 
 .shortcut-content {
     padding: 15px;
-    color: #abb2bf;
-    line-height: 1.6;
-}
-
-body.light-mode .shortcut-content {
     color: #555;
+    line-height: 1.6;
 }
 
 .shortcut-content ul {
@@ -266,10 +282,6 @@ body.light-mode .shortcut-content {
 }
 
 .shortcut-content strong {
-    color: #61afef;
-}
-
-body.light-mode .shortcut-content strong {
     color: #1a73e8; /* Blau für Light Mode */
 }
 
