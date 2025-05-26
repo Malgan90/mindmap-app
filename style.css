@@ -1,296 +1,65 @@
-/* General Body Styles */
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    background-color: #f0f0f0; /* Helles Grau als Standard */
-    color: #333; /* Dunkler Text */
+    font-family: sans-serif; margin: 0; background-color: #f0f0f0; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; position: relative;
 }
 
-/* Toolbar Styles */
-#toolbar {
-    background-color: #e0e0e0; /* Helles Grau für Toolbar */
-    padding: 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    border-bottom: 1px solid #ccc;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    z-index: 1000;
-}
-
-#toolbar button {
-    background-color: #a0a0a0; /* Grau für Buttons */
-    color: black;
-    border: none;
-    border-radius: 5px;
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s ease, color 0.2s ease;
-    height: 35px;
-    box-sizing: border-box;
-}
-
-#toolbar button:hover {
-    background-color: #c0c0c0;
-}
-
-#toolbar button:active {
-    background-color: #808080;
-}
-
-/* Screenshot Options (Checkbox, Select) */
-.screenshot-options {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: #333;
-}
-
-.screenshot-options label {
-    font-size: 14px;
-}
-
-.screenshot-options input[type="checkbox"] {
-    transform: scale(1.2); /* Checkbox etwas vergrößern */
-}
-
-.screenshot-options select {
-    padding: 5px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    background-color: white;
-    color: #333;
-    font-size: 14px;
-}
-
-/* Node Size Settings */
-.size-settings-toolbar, .color-settings-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: #333;
-}
-
-.size-settings-toolbar label, .color-settings-toolbar label {
-    font-size: 14px;
-    white-space: nowrap; /* Verhindert Zeilenumbruch */
-}
-
-.size-settings-toolbar button {
-    width: 30px; /* Kleinere Breite für +/- Buttons */
-    height: 30px; /* Kleinere Höhe */
-    padding: 0;
-    line-height: 1; /* Text zentrieren */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 18px; /* Größere Schrift für +/- */
-}
-
-/* Color Pickers */
-.default-color-pickers {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-input[type="color"] {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    width: 35px; /* Angemessene Größe für Color Picker */
-    height: 35px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    padding: 0;
-    margin: 0;
-    border-radius: 5px; /* Leicht abgerundet */
-    overflow: hidden; /* Sicherstellen, dass der Farbkreis innerhalb des Rahmens bleibt */
-}
-
-input[type="color"]::-webkit-color-swatch-wrapper {
-    padding: 0;
-}
-
-input[type="color"]::-webkit-color-swatch {
-    border: 1px solid #ccc;
-    border-radius: 4px; /* Innenkreis auch abrunden */
-}
-
-input[type="color"]::-moz-color-swatch-wrapper {
-    padding: 0;
-}
-
-input[type="color"]::-moz-color-swatch {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-/* Mindmap Container Styles */
-#mindmap-container {
-    flex-grow: 1;
-    position: relative;
-    overflow: hidden;
-    outline: none;
-    background-color: #ffffff; /* Weißer Hintergrund */
-}
-
-/* Mindmap Node Styles (SVG) */
-.mindmap-node circle {
-    fill: #add8e6; /* Hellblau */
-    stroke: black;
-    stroke-width: 1;
-    cursor: grab;
-    transition: fill 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease;
-}
-
-.mindmap-node circle:hover {
-    stroke: #61afef; /* Highlight on hover */
-    stroke-width: 2;
-}
-
-.mindmap-node text {
-    font-family: Arial, sans-serif;
-    font-size: 14px;
-    fill: #000000; /* Schwarz */
-    user-select: none;
-    pointer-events: none;
-}
-
-.mindmap-node.selected circle {
-    stroke: orange;
-    stroke-width: 3;
-}
-
-/* Mindmap Line Styles (SVG) */
-.mindmap-line {
-    stroke: black;
-    stroke-width: 2;
-}
-
-/* Toast Notification Styles */
-#toast-notification {
-    visibility: hidden;
-    min-width: 250px;
-    background-color: #333;
-    color: #fff;
-    text-align: center;
-    border-radius: 5px;
-    padding: 10px;
-    position: fixed;
-    z-index: 1001;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: 30px;
-    font-size: 15px;
-    opacity: 0;
-    transition: opacity 0.5s, bottom 0.5s, visibility 0.5s;
-}
-
-#toast-notification.show {
-    visibility: visible;
-    opacity: 1;
-    bottom: 50px;
-}
-
-#toast-notification.success {
-    background-color: #4CAF50;
-}
-
-#toast-notification.error {
-    background-color: #f44336;
-}
-
-#toast-notification.info {
-    background-color: #2196F3;
-}
-
-/* Shortcut Window Styles */
+/* --- Shortcut Window --- */
 #shortcut-window {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #f0f0f0; /* Helles Grau */
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    z-index: 2000;
-    min-width: 250px;
-    max-width: 400px;
-    resize: both;
-    overflow: auto;
-    display: none;
-    flex-direction: column;
+    position: absolute; top: 10px; left: 10px; background-color: rgba(245, 245, 245, 0.95); border: 1px solid #ccc; border-radius: 8px; box-shadow: 3px 3px 10px rgba(0,0,0,0.2); z-index: 2000; min-width: 220px; min-height: 100px; overflow: hidden; display: flex; flex-direction: column;
 }
+#shortcut-window.hidden { display: none; }
+.shortcut-header { background-color: #e0e0e0; padding: 5px 10px; cursor: move; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; border-top-left-radius: 7px; border-top-right-radius: 7px;}
+.shortcut-header h4 { margin: 0; font-size: 0.9em; }
+.shortcut-close-btn { background: none; border: none; font-size: 1.1em; cursor: pointer; padding: 0 5px; color: #555; }
+.shortcut-close-btn:hover { color: #000; }
+.shortcut-content { padding: 10px 15px; font-size: 0.8em; flex-grow: 1; overflow-y: auto; }
+.shortcut-content ul { list-style: none; padding: 0; margin: 0; }
+.shortcut-content li { margin-bottom: 4px; }
+.resize-handle { width: 10px; height: 10px; background-color: #bbb; position: absolute; right: 0; bottom: 0; cursor: nwse-resize; border-bottom-right-radius: 7px;}
 
-#shortcut-window.show {
-    display: flex;
+/* --- Toolbar --- */
+#toolbar {
+    background-color: #333; padding: 8px 10px; width: 100%; box-sizing: border-box; text-align: center; margin-bottom: 10px; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; z-index: 1500;
 }
+#toolbar button { padding: 8px 12px; margin: 5px; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+#toolbar button:hover { opacity: 0.85; }
+#addRootNodeBtn { background-color: #5cb85c; }
+#clearMapBtn { background-color: #d9534f; }
+#downloadMapBtn { background-color: #337ab7; }
+#screenshotBtn { background-color: #f0ad4e; }
+#toggleShortcutBtn { background-color: #6c757d; }
+.screenshot-options { display: flex; align-items: center; background-color: #4a4a4a; padding: 5px 8px; border-radius: 4px; margin: 0 5px; }
+.screenshot-options label { color: white; font-size: 0.85em; cursor: pointer; user-select: none; margin-right: 5px; }
+.screenshot-options input[type="checkbox"] { margin-right: 3px; vertical-align: middle; cursor: pointer;}
+#screenshotFormatSelect { margin-left: 8px; padding: 2px; font-size: 0.8em; border-radius: 3px; border: 1px solid #ccc; background-color: #fff; cursor: pointer;}
+.color-settings-toolbar { display: flex; align-items: center; margin-left: 10px; padding: 5px 8px; background-color: #4a4a4a; border-radius: 4px; }
+.default-color-pickers label { color: white; margin-left: 10px; margin-right: 5px; font-size: 0.85em; }
+.default-color-pickers input[type="color"] { width: 30px; height: 20px; border: 1px solid #555; padding: 0; cursor: pointer; border-radius: 3px; vertical-align: middle; }
+#resetDefaultColorsBtn { margin-left: 10px; padding: 4px 8px; font-size: 0.8em; background-color: #6c757d; color: white; border: none; border-radius: 3px; cursor: pointer; }
+#resetDefaultColorsBtn:hover { background-color: #5a6268; }
 
-.shortcut-header {
-    background-color: #e0e0e0; /* Helles Grau */
-    padding: 10px 15px;
-    border-bottom: 1px solid #ccc;
-    cursor: grab;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-}
 
-.shortcut-header h4 {
-    margin: 0;
-    color: #333;
-}
+/* --- Mindmap Container & Nodes --- */
+#mindmap-container { width: 95vw; height: calc(85vh - 30px); border: 2px solid #ccc; position: relative; overflow: auto; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); outline: none; }
+#mindmap-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.node { position: absolute; border: 2px solid dodgerblue; border-radius: 50%; min-width: 100px; min-height: 100px; padding: 15px; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); cursor: grab; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; box-sizing: border-box; text-align: center; user-select: none; }
+.node.selected { border-color: orange !important; box-shadow: 0 0 10px orange !important; }
+.node.dragging { cursor: grabbing; box-shadow: 4px 4px 8px rgba(0,0,0,0.3); z-index: 1000; opacity: 0.7; }
+.node.drop-target-highlight { border-color: limegreen !important; box-shadow: 0 0 15px limegreen !important; }
+.line-drop-target-highlight { stroke: limegreen !important; stroke-width: 4px !important; }
+.node-text-input { width: 90%; padding: 5px; margin-bottom: 5px; border: 1px solid transparent; border-radius: 4px; text-align: center; font-size: 1.1em; background-color: transparent; outline: none; max-width: 100%; pointer-events: all; }
+.node-text-input:focus { border: 1px solid #aaa; background-color: rgba(255,255,255,0.5); }
+.node-controls { display: none; flex-direction: column; align-items: center; position: absolute; bottom: -95px; left: 50%; transform: translateX(-50%); background-color: rgba(255, 255, 255, 0.95); padding: 8px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.25); pointer-events: all; z-index: 15; }
+.node.selected .node-controls { display: flex; }
+.node-controls .buttons-row { display: flex; margin-bottom: 8px; }
+.node-controls button { font-size: 1em; font-weight: bold; padding: 2px 5px; margin: 0 3px; cursor: pointer; background-color: transparent; color: #333; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.node-controls button:hover { background-color: rgba(0,0,0,0.1); }
+.node-controls .reset-colors-btn { font-size: 0.75em; padding: 3px 8px; margin-top: 8px; background-color: #e0e0e0; border: 1px solid #ccc; border-radius: 4px; color: #333; cursor: pointer; width: auto; height: auto; }
+.node-controls .reset-colors-btn:hover { background-color: #d0d0d0; }
+.node-color-pickers { display: flex; flex-direction: column; align-items: flex-start; font-size: 0.8em; }
+.node-color-pickers div { display: flex; align-items: center; margin-bottom: 4px; }
+.node-color-pickers label { margin-right: 5px; min-width: 60px; }
+.node-color-pickers input[type="color"] { width: 25px; height: 18px; border: 1px solid #ccc; padding: 0; cursor: pointer; }
 
-.shortcut-close-btn {
-    background: none;
-    border: none;
-    color: #333;
-    font-size: 1.2em;
-    cursor: pointer;
-    padding: 0 5px;
-}
-
-.shortcut-close-btn:hover {
-    color: #ff6347;
-}
-
-.shortcut-content {
-    padding: 15px;
-    color: #555;
-    line-height: 1.6;
-}
-
-.shortcut-content ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.shortcut-content li {
-    margin-bottom: 5px;
-}
-
-.shortcut-content strong {
-    color: #1a73e8; /* Blau für Light Mode */
-}
-
-.resize-handle {
-    width: 15px;
-    height: 15px;
-    background: transparent;
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    cursor: se-resize;
-}
+/* --- Toast Notification --- */
+.toast { visibility: hidden; min-width: 200px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 12px; position: fixed; z-index: 3000; left: 50%; transform: translateX(-50%); bottom: 30px; font-size: 0.9em; opacity: 0; transition: visibility 0s 0.5s, opacity 0.5s linear; }
+.toast.show { visibility: visible; opacity: 1; transition: opacity 0.5s linear; }
