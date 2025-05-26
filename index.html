@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind Map Creator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div id="shortcut-window" class="draggable resizable">
+        <div class="shortcut-header">
+            <h4>Shortcuts</h4>
+            <button id="close-shortcut-btn" class="shortcut-close-btn" title="Close Shortcuts">X</button>
+        </div>
+        <div class="shortcut-content">
+            <ul>
+                <li><strong>R:</strong> Add Root Node</li>
+                <li><strong>Enter/Tab:</strong> Add Child</li>
+                <li><strong>Shift+Enter/Tab:</strong> Add Sibling</li>
+                <li><strong>Del/Backspace:</strong> Delete Selected Node</li>
+                <li><strong>Ctrl/Cmd+S:</strong> Save Map (JSON)</li>
+                <li><strong>Ctrl/Cmd+P:</strong> Screenshot</li>
+                <li><strong>Alt+H:</strong> Show/Hide Shortcuts</li>
+            </ul>
+        </div>
+        <div class="resize-handle"></div>
+    </div>
+
+    <div id="toolbar">
+        <button id="addRootNodeBtn" title="Add a new main topic (R)">Add Root Node</button>
+        <button id="clearMapBtn" title="Remove all nodes from the map">Clear Map</button>
+        <button id="downloadMapBtn" title="Save the current mind map structure (Ctrl+S)">Save Map (JSON)</button>
+        <button id="screenshotBtn" title="Create a screenshot (Ctrl+P)">Screenshot</button>
+        <div class="screenshot-options">
+            <input type="checkbox" id="screenshotToClipboardCb" title="Copy screenshot Download file instead of downloading (PNG only)">
+            <label for="screenshotToClipboardCb">Download file</label>
+            <select id="screenshotFormatSelect" title="Choose screenshot format (download only for JPEG/PDF)">
+                <option value="png" selected>PNG</option>
+                <option value="jpeg">JPEG</option>
+                <option value="pdf">PDF</option>
+            </select>
+        </div>
+        <button id="toggleShortcutBtn" title="Toggle Shortcuts Visibility (Alt+H)">Shortcuts</button>
+        <div class="color-settings-toolbar">
+            <div class="default-color-pickers">
+                <label for="defaultNodeColor">Node Color:</label>
+                <input type="color" id="defaultNodeColor" value="#add8e6" title="Default color for new nodes">
+                <label for="defaultTextColor">Text Color:</label>
+                <input type="color" id="defaultTextColor" value="#000000" title="Default text color for new nodes">
+            </div>
+            <button id="resetDefaultColorsBtn" title="Reset default node and text colors">Reset Default Colors</button>
+        </div>
+    </div>
+
+    <div id="mindmap-container" tabindex="0">
+        <svg id="mindmap-svg"></svg>
+        <!-- Nodes will be inserted here by JavaScript -->
+    </div>
+
+    <div id="toast-notification" class="toast"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
