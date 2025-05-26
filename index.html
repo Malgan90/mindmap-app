@@ -39,11 +39,35 @@
 
     <div id="toolbar">
         <button id="addRootNodeBtn" title="Add a new main topic (R)">Add Root Node</button>
+        <button id="clearMapBtn" title="Remove all nodes from the map">Clear Map</button>
+        <button id="downloadMapBtn" title="Save the current mind map structure (Ctrl+S)">Save Map (JSON)</button>
+        <button id="screenshotBtn" title="Create a screenshot (Ctrl+P)">Screenshot</button>
+        <div class="screenshot-options">
+            <input type="checkbox" id="screenshotToClipboardCb" title="Toggle between downloading file and copying to clipboard">
+            <label for="screenshotToClipboardCb">Download file</label>
+            <select id="screenshotFormatSelect" title="Choose screenshot format (download only for JPEG/PDF)">
+                <option value="png" selected>PNG</option>
+                <option value="jpeg">JPEG</option>
+                <option value="pdf">PDF</option>
+            </select>
+        </div>
         <button id="toggleShortcutBtn" title="Toggle Shortcuts Visibility (Alt+H)">Shortcuts</button>
         
-        <button id="toggleDarkModeBtn" title="Toggle Dark/Light Mode">Toggle Dark Mode</button>
-        
+        <div class="size-settings-toolbar">
+            <label>Node Size:</label>
+            <button id="decreaseNodeSizeBtn" title="Decrease size of selected node">-</button>
+            <button id="increaseNodeSizeBtn" title="Increase size of selected node">+</button>
         </div>
+        <div class="color-settings-toolbar">
+            <div class="default-color-pickers">
+                <label for="defaultNodeColor">Node Color:</label>
+                <input type="color" id="defaultNodeColor" value="#add8e6" title="Default color for new nodes">
+                <label for="defaultTextColor">Text Color:</label>
+                <input type="color" id="defaultTextColor" value="#000000" title="Default text color for new nodes">
+            </div>
+            <button id="resetDefaultColorsBtn" title="Reset default node and text colors">Reset Default Colors</button>
+        </div>
+    </div>
 
     <div id="mindmap-container" tabindex="0">
         <svg id="mindmap-svg"></svg>
