@@ -1,612 +1,673 @@
-// ====================================================================================
-// ANNAHMEN:
-// - `nodes` ist eine Map, die deine Knoten-Objekte speichert.
-// - `selectedNodeId` speichert die ID des aktuell ausgewählten Knotens.
-// - `mindmapSvg` ist dein SVG-Element.
-// ====================================================================================
-
-// --- Globale Variablen und Konstanten ---
-const mindmapContainer = document.getElementById('mindmap-container');
-const mindmapSvg = document.getElementById('mindmap-svg');
-const toastNotification = document.getElementById('toast-notification');
-
-// Angenommene globale Knoten-Verwaltung
-const nodes = new Map(); // Speichert Knoten-Objekte: Map<nodeId, nodeObject>
-let selectedNodeId = null;
-
-// Standardwerte für Knoten
-let DEFAULT_NODE_RADIUS = 30;
-let DEFAULT_FONT_SIZE = 14;
-let DEFAULT_NODE_COLOR = "#add8e6"; // Hellblau
-let DEFAULT_TEXT_COLOR = "#000000"; // Schwarz
-
-// --- DOM-Elemente abrufen ---
-const addRootNodeBtn = document.getElementById('addRootNodeBtn');
-const clearMapBtn = document.getElementById('clearMapBtn');
-const downloadMapBtn = document.getElementById('downloadMapBtn');
-const screenshotBtn = document.getElementById('screenshotBtn');
-const screenshotToClipboardCb = document.getElementById('screenshotToClipboardCb');
-const screenshotFormatSelect = document.getElementById('screenshotFormatSelect');
-const toggleShortcutBtn = document.getElementById('toggleShortcutBtn');
-const shortcutWindow = document.getElementById('shortcut-window');
-const closeShortcutBtn = document.getElementById('close-shortcut-btn');
-
-const decreaseNodeSizeBtn = document.getElementById('decreaseNodeSizeBtn');
-const increaseNodeSizeBtn = document.getElementById('increaseNodeSizeBtn');
-const defaultNodeColorInput = document.getElementById('defaultNodeColor');
-const defaultTextColorInput = document.getElementById('defaultTextColor');
-const resetDefaultColorsBtn = document.getElementById('resetDefaultColorsBtn');
-
-
-// --- Event Listener initialisieren ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Event Listener für "Add Root Node"
-    if (addRootNodeBtn) {
-        addRootNodeBtn.addEventListener('click', addRootNode);
-    }
+    const mindmapContainer = document.getElementById('mindmap-container');
+    const svg = document.getElementById('mindmap-svg');
+    const addRootNodeBtn = document.getElementById('addRootNodeBtn');
+    const clearMapBtn = document.getElementById('clearMapBtn');
+    const downloadMapBtn = document.getElementById('downloadMapBtn');
+    const screenshotBtn = document.getElementById('screenshotBtn');
+    const toggleShortcutBtn = document.getElementById('toggleShortcutBtn');
+    const defaultNodeColorPicker = document.getElementById('defaultNodeColor');
+    const defaultTextColorPicker = document.getElementById('defaultTextColor');
+    // Die Checkbox wurde umbenannt, aber die ID bleibt screenshotToClipboardCb
+    const screenshotToClipboardCb = document.getElementById('screenshotToClipboardCb'); 
+    const screenshotFormatSelect = document.getElementById('screenshotFormatSelect');
+    const toastNotification = document.getElementById('toast-notification');
+    const resetDefaultColorsBtn = document.getElementById('resetDefaultColorsBtn');
+    let toastTimeout;
 
-    // Event Listener für "Clear Map"
-    if (clearMapBtn) {
-        clearMapBtn.addEventListener('click', clearMap);
-    }
+    const initialDefaultNodeColor = '#add8e6';
+    const initialDefaultTextColor = '#000000';
 
-    // Event Listener für "Download Map"
-    if (downloadMapBtn) {
-        downloadMapBtn.addEventListener('click', saveMap);
-    }
+    const shortcutWindow = document.getElementById('shortcut-window');
+    const shortcutHeader = shortcutWindow.querySelector('.shortcut-header');
+    const closeShortcutBtn = document.getElementById('close-shortcut-btn');
+    const resizeHandle = shortcutWindow.querySelector('.resize-handle');
+    let isDraggingShortcutWindow = false, isResizingShortcutWindow = false;
+    let shortcutWindowDragX, shortcutWindowDragY, shortcutWindowResizeStartX, shortcutWindowResizeStartY, shortcutWindowInitialWidth, shortcutWindowInitialHeight;
 
-    // Event Listener für "Screenshot"
-    if (screenshotBtn) {
-        screenshotBtn.addEventListener('click', takeScreenshot);
-    }
+    let nodes = [];
+    let nodeIdCounter = 0;
+    let selectedNodeId = null;
 
-    // Event Listener für Knotengröße
-    if (decreaseNodeSizeBtn) {
-        decreaseNodeSizeBtn.addEventListener('click', () => adjustNodeSize(-5));
-    }
-    if (increaseNodeSizeBtn) {
-        increaseNodeSizeBtn.addEventListener('click', () => adjustNodeSize(5));
-    }
+    let activeDragNodeData = null;
+    let dragOffsetX, dragOffsetY;
+    let currentDragTargetInfo = { type: null, id: null, lineElement: null, lineParentId: null, lineChildId: null };
 
-    // Event Listener für Standardfarben
-    if (defaultNodeColorInput) {
-        defaultNodeColorInput.addEventListener('input', (event) => {
-            DEFAULT_NODE_COLOR = event.target.value;
-            showToast('Default node color updated!', 'info');
+    function createNodeElement(nodeData) {
+        const nodeDiv = document.createElement('div');
+        nodeDiv.classList.add('node'); 
+        nodeDiv.id = nodeData.id;
+        nodeDiv.style.left = `${nodeData.x}px`; 
+        nodeDiv.style.top = `${nodeData.y}px`;
+        nodeDiv.style.backgroundColor = nodeData.bgColor; 
+        nodeDiv.style.borderColor = getDarkerColor(nodeData.bgColor);
+        if (nodeData.id === selectedNodeId) nodeDiv.classList.add('selected');
+
+        const textInput = document.createElement('input');
+        textInput.type = 'text'; 
+        textInput.classList.add('node-text-input'); 
+        textInput.value = nodeData.text; 
+        textInput.style.color = nodeData.textColor;
+        textInput.addEventListener('change', (e) => { nodeData.text = e.target.value; });
+        textInput.addEventListener('mousedown', (e) => e.stopPropagation()); 
+        textInput.addEventListener('focus', (e) => e.target.select());
+        textInput.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter' || e.key === 'Escape') textInput.blur(); });
+
+        const controlsDiv = document.createElement('div'); 
+        controlsDiv.classList.add('node-controls');
+        const buttonsRow = document.createElement('div'); 
+        buttonsRow.classList.add('buttons-row');
+        const addChildBtn = document.createElement('button'); 
+        addChildBtn.textContent = '+'; 
+        addChildBtn.title = 'Add child node';
+        addChildBtn.addEventListener('click', (e) => { e.stopPropagation(); addNode(nodeData.id); });
+        const deleteBtn = document.createElement('button'); 
+        deleteBtn.textContent = '🗑️'; 
+        deleteBtn.title = 'Delete this node';
+        deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteNode(nodeData.id); });
+        buttonsRow.appendChild(addChildBtn); 
+        buttonsRow.appendChild(deleteBtn); 
+        controlsDiv.appendChild(buttonsRow);
+
+        const nodeColorPickersDiv = document.createElement('div'); 
+        nodeColorPickersDiv.classList.add('node-color-pickers');
+        const bgColorDiv = document.createElement('div'); 
+        const bgColorLabel = document.createElement('label'); 
+        bgColorLabel.textContent = 'Node:';
+        const nodeBgColorInput = document.createElement('input'); 
+        nodeBgColorInput.type = 'color'; 
+        nodeBgColorInput.value = nodeData.bgColor;
+        nodeBgColorInput.title = 'Change node background color';
+        nodeBgColorInput.addEventListener('input', (e) => { 
+            nodeData.bgColor = e.target.value; 
+            nodeDiv.style.backgroundColor = nodeData.bgColor; 
+            nodeDiv.style.borderColor = getDarkerColor(nodeData.bgColor); 
+            drawLines(); 
         });
-        // Initialen Wert setzen
-        defaultNodeColorInput.value = DEFAULT_NODE_COLOR;
-    }
-    if (defaultTextColorInput) {
-        defaultTextColorInput.addEventListener('input', (event) => {
-            DEFAULT_TEXT_COLOR = event.target.value;
-            showToast('Default text color updated!', 'info');
+        nodeBgColorInput.addEventListener('mousedown', e => e.stopPropagation());
+        bgColorDiv.appendChild(bgColorLabel); 
+        bgColorDiv.appendChild(nodeBgColorInput); 
+        nodeColorPickersDiv.appendChild(bgColorDiv);
+        const textColorDiv = document.createElement('div'); 
+        const textColorLabel = document.createElement('label'); 
+        textColorLabel.textContent = 'Text:';
+        const nodeTextColorInput = document.createElement('input'); 
+        nodeTextColorInput.type = 'color'; 
+        nodeTextColorInput.value = nodeData.textColor;
+        nodeTextColorInput.title = 'Change node text color';
+        nodeTextColorInput.addEventListener('input', (e) => { 
+            nodeData.textColor = e.target.value; 
+            textInput.style.color = nodeData.textColor; 
         });
-        // Initialen Wert setzen
-        defaultTextColorInput.value = DEFAULT_TEXT_COLOR;
+        nodeTextColorInput.addEventListener('mousedown', e => e.stopPropagation());
+        textColorDiv.appendChild(textColorLabel); 
+        textColorDiv.appendChild(nodeTextColorInput); 
+        nodeColorPickersDiv.appendChild(textColorDiv);
+        controlsDiv.appendChild(nodeColorPickersDiv);
+
+        const resetColorsBtn = document.createElement('button'); 
+        resetColorsBtn.textContent = 'Reset Colors'; 
+        resetColorsBtn.classList.add('reset-colors-btn'); 
+        resetColorsBtn.title = 'Reset colors to default';
+        resetColorsBtn.addEventListener('click', (e) => { e.stopPropagation(); resetNodeColors(nodeData, nodeDiv, textInput); });
+        controlsDiv.appendChild(resetColorsBtn);
+
+        nodeDiv.appendChild(textInput); 
+        nodeDiv.appendChild(controlsDiv);
+        nodeDiv.addEventListener('mousedown', handleNodeMouseDown);
+        nodeDiv.addEventListener('click', handleNodeClick);
+        nodeData.element = nodeDiv;
+        return nodeDiv;
     }
-    if (resetDefaultColorsBtn) {
-        resetDefaultColorsBtn.addEventListener('click', resetDefaultColors);
-    }
 
-
-    // Event Listener für Tastenkombinationen
-    mindmapContainer.addEventListener('keydown', handleKeyDown);
-
-    // Event Listener für Shortcut-Fenster
-    if (toggleShortcutBtn) {
-        toggleShortcutBtn.addEventListener('click', toggleShortcuts);
-    }
-    if (closeShortcutBtn) {
-        closeShortcutBtn.addEventListener('click', toggleShortcuts);
-    }
-
-    // Initiales Rendern der Mindmap (wird eine leere Mindmap zeichnen)
-    renderMindmap();
-});
-
-
-// --- HELPER FUNKTIONEN ---
-
-// Funktion zum Erstellen eines neuen Knotens
-function createNode(id, text, parentId, x, y) {
-    const node = {
-        id: id,
-        text: text,
-        parentId: parentId,
-        children: [],
-        x: x,
-        y: y,
-        color: DEFAULT_NODE_COLOR,
-        textColor: DEFAULT_TEXT_COLOR,
-        radius: DEFAULT_NODE_RADIUS,
-        fontSize: DEFAULT_FONT_SIZE,
-    };
-    nodes.set(id, node);
-    if (parentId !== null) {
-        const parentNode = nodes.get(parentId);
-        if (parentNode) {
-            parentNode.children.push(id);
+    function resetNodeColors(nodeData, nodeDivElement, textInputElement) {
+        nodeData.bgColor = defaultNodeColorPicker.value; 
+        nodeData.textColor = defaultTextColorPicker.value;
+        nodeDivElement.style.backgroundColor = nodeData.bgColor; 
+        nodeDivElement.style.borderColor = getDarkerColor(nodeData.bgColor); 
+        textInputElement.style.color = nodeData.textColor;
+        const nodeControls = nodeDivElement.querySelector('.node-controls');
+        if (nodeControls) { 
+            const bgPicker = nodeControls.querySelector('.node-color-pickers input[type="color"]'); 
+            const textPicker = nodeControls.querySelectorAll('.node-color-pickers input[type="color"]')[1]; 
+            if (bgPicker) bgPicker.value = nodeData.bgColor; 
+            if (textPicker) textPicker.value = nodeData.textColor; 
         }
-    }
-    return node;
-}
-
-// Funktion zum Finden eines Knotens
-function findNodeById(id) {
-    return nodes.get(id);
-}
-
-// Funktion zum Anzeigen von Toast-Benachrichtigungen
-function showToast(message, type = 'info') {
-    toastNotification.textContent = message;
-    toastNotification.className = `toast ${type} show`;
-    setTimeout(() => {
-        toastNotification.className = 'toast';
-    }, 3000);
-}
-
-// --- FUNKTIONEN ZUR KNOTEN- UND LINIENDARSTELLUNG ---
-
-// Funktion, die einen einzelnen Knoten im SVG erstellt/aktualisiert
-function drawNode(node) {
-    let nodeGroup = d3.select(`#node-${node.id}`);
-    if (nodeGroup.empty()) {
-        nodeGroup = d3.select(mindmapSvg)
-                      .append('g')
-                      .attr('id', `node-${node.id}`)
-                      .attr('class', 'mindmap-node')
-                      .on('click', (event) => selectNode(event, node.id))
-                      .call(d3.drag()
-                            .on('start', (event) => dragstarted(event, node))
-                            .on('drag', (event) => dragged(event, node))
-                            .on('end', (event) => dragended(event, node)));
-
-        nodeGroup.append('circle');
-        nodeGroup.append('text')
-                 .attr('text-anchor', 'middle')
-                 .attr('dominant-baseline', 'middle');
+        drawLines();
     }
 
-    nodeGroup.attr('transform', `translate(${node.x},${node.y})`);
+    function addNode(parentId = null, initialProps = {}) {
+        nodeIdCounter++; 
+        const newNodeId = `node-${nodeIdCounter}`;
+        let x = initialProps.x || 50, y = initialProps.y || 50, text = initialProps.text || 'New Idea';
+        const bgColor = initialProps.bgColor || defaultNodeColorPicker.value, textColor = initialProps.textColor || defaultTextColorPicker.value;
+        const tempElement = createDummyNodeElement(text); 
+        const nodeWidth = tempElement.offsetWidth;
+        const nodeHeight = tempElement.offsetHeight; 
+        tempElement.remove();
 
-    nodeGroup.select('circle')
-        .attr('r', node.radius)
-        .style('fill', node.color)
-        .style('stroke', selectedNodeId === node.id ? 'orange' : 'black')
-        .style('stroke-width', selectedNodeId === node.id ? 3 : 1);
-
-    nodeGroup.select('text')
-        .text(node.text)
-        .attr('font-size', `${node.fontSize}px`)
-        .style('fill', node.textColor);
-    
-    // Doppelklick zum Bearbeiten des Knotentextes
-    nodeGroup.on('dblclick', (event) => {
-        const newText = prompt('Enter new node text:', node.text);
-        if (newText !== null) {
-            node.text = newText;
-            drawNode(node); // Knoten neu zeichnen mit neuem Text
-            showToast('Node text updated!', 'info');
-        }
-    });
-}
-
-// Funktion zum Neuzeichnen aller Linien
-function updateConnections() {
-    d3.select(mindmapSvg).selectAll('.mindmap-line').remove();
-
-    nodes.forEach(node => {
-        if (node.parentId !== null) {
-            const parent = findNodeById(node.parentId);
-            if (parent) {
-                // Berechne die Schnittpunkte auf den Kreisen für die Linie
-                const angleParent = Math.atan2(node.y - parent.y, node.x - parent.x);
-                const startX = parent.x + parent.radius * Math.cos(angleParent);
-                const startY = parent.y + parent.radius * Math.sin(angleParent);
-
-                const angleNode = Math.atan2(parent.y - node.y, parent.x - node.x);
-                const endX = node.x + node.radius * Math.cos(angleNode);
-                const endY = node.y + node.radius * Math.sin(angleNode);
-
-                d3.select(mindmapSvg).append('line')
-                    .attr('class', 'mindmap-line')
-                    .attr('x1', startX)
-                    .attr('y1', startY)
-                    .attr('x2', endX)
-                    .attr('y2', endY)
-                    .style('stroke', 'black')
-                    .style('stroke-width', 2);
+        if (parentId) { 
+            const parent = nodes.find(n => n.id === parentId); 
+            if (parent && parent.element) { 
+                x = parent.x + parent.element.offsetWidth + 50 + Math.random() * 20; 
+                y = parent.y + (parent.element.offsetHeight / 2) - (nodeHeight / 2) + Math.random() * 40; 
             }
+        } else { 
+            const rootNodes = nodes.filter(n => !n.parentId); 
+            x = 50 + rootNodes.length * (nodeWidth / 2 + 30); 
+            y = 50 + rootNodes.length * 30; 
         }
-    });
-}
-
-// Haupt-Rendering-Funktion
-function renderMindmap() {
-    mindmapSvg.innerHTML = ''; // Vorherige Elemente entfernen
-    nodes.forEach(node => drawNode(node));
-    updateConnections();
-}
-
-// --- KERN-FUNKTIONALITÄT ---
-
-function selectNode(event, nodeId) {
-    event.stopPropagation(); // Verhindert, dass Klick auf SVG die Auswahl aufhebt
-
-    if (selectedNodeId !== null) {
-        const oldSelectedNode = findNodeById(selectedNodeId);
-        if (oldSelectedNode) {
-            drawNode(oldSelectedNode); // Neu zeichnen, um den Rahmen zu entfernen
+        
+        x = Math.max(10, Math.min(x, mindmapContainer.scrollWidth - nodeWidth - 10)); 
+        y = Math.max(10, Math.min(y, mindmapContainer.scrollHeight - nodeHeight - 10));
+        
+        const newNodeData = { id: newNodeId, text, x, y, parentId, bgColor, textColor, childrenIds: [], element: null };
+        nodes.push(newNodeData); 
+        if (parentId) { 
+            const parent = nodes.find(n => n.id === parentId); 
+            if (parent) parent.childrenIds.push(newNodeId); 
         }
+        const nodeElement = createNodeElement(newNodeData); 
+        mindmapContainer.appendChild(nodeElement);
+        drawLines(); 
+        selectNode(newNodeId);
+        const newInput = nodeElement.querySelector('.node-text-input'); 
+        if (newInput) newInput.focus();
+        return newNodeData;
     }
 
-    selectedNodeId = nodeId;
-    const newSelectedNode = findNodeById(selectedNodeId);
-    if (newSelectedNode) {
-        drawNode(newSelectedNode); // Neu zeichnen, um den Rahmen anzuzeigen
-        showToast(`Node "${newSelectedNode.text}" selected.`, 'info');
+    function deleteNode(nodeId) {
+        const nodeToDelete = nodes.find(n => n.id === nodeId); 
+        if (!nodeToDelete) return;
+        
+        [...nodeToDelete.childrenIds].forEach(childId => deleteNode(childId));
+        
+        if (nodeToDelete.parentId) { 
+            const parent = nodes.find(n => n.id === nodeToDelete.parentId); 
+            if (parent) parent.childrenIds = parent.childrenIds.filter(id => id !== nodeId); 
+        }
+        
+        if (nodeToDelete.element) nodeToDelete.element.remove();
+        
+        nodes = nodes.filter(n => n.id !== nodeId);
+        
+        if (selectedNodeId === nodeId) { 
+            selectedNodeId = null; 
+            if (nodeToDelete.parentId) selectNode(nodeToDelete.parentId); 
+            else if (nodes.length > 0) selectNode(nodes[0].id); 
+        }
+        drawLines();
     }
-}
 
-// Wenn auf den SVG-Container geklickt wird (nicht auf einen Knoten), Auswahl aufheben
-mindmapContainer.addEventListener('click', (event) => {
-    if (event.target.id === 'mindmap-svg' || event.target.id === 'mindmap-container') {
-        if (selectedNodeId !== null) {
-            const oldSelectedNode = findNodeById(selectedNodeId);
-            selectedNodeId = null;
-            if (oldSelectedNode) {
-                drawNode(oldSelectedNode); // Neu zeichnen, um den Rahmen zu entfernen
-                showToast('Node selection cleared.', 'info');
-            }
+    function handleNodeClick(e) { e.stopPropagation(); const nodeId = e.currentTarget.id; selectNode(nodeId); }
+    function selectNode(nodeId) {
+        if (selectedNodeId === nodeId && nodeId !== null) return;
+        
+        if (selectedNodeId) { 
+            const oldSelectedNode = nodes.find(n => n.id === selectedNodeId); 
+            if (oldSelectedNode && oldSelectedNode.element) oldSelectedNode.element.classList.remove('selected'); 
+        }
+        selectedNodeId = nodeId;
+        
+        if (nodeId) { 
+            const newSelectedNode = nodes.find(n => n.id === nodeId); 
+            if (newSelectedNode && newSelectedNode.element) newSelectedNode.element.classList.add('selected'); 
         }
     }
-});
+    mindmapContainer.addEventListener('click', (e) => { if (e.target === mindmapContainer) { selectNode(null); } });
 
-
-function addRootNode() {
-    const rootId = 'node-' + Date.now();
-    const rootNode = createNode(rootId, 'New Root', null, 200, 200); // Standardposition
-    renderMindmap();
-    selectNode(null, rootId);
-    showToast('Root node added!', 'success');
-}
-
-function addChildNode() {
-    if (selectedNodeId) {
-        const parentNode = findNodeById(selectedNodeId);
-        if (parentNode) {
-            const childId = 'node-' + Date.now();
-            const childNode = createNode(childId, 'New Child', parentNode.id, parentNode.x + 100, parentNode.y + 50);
-            renderMindmap();
-            selectNode(null, childId);
-            showToast('Child node added!', 'success');
-        }
-    } else {
-        showToast('Please select a node first to add a child!', 'error');
-    }
-}
-
-function addSiblingNode() {
-    if (selectedNodeId) {
-        const currentNode = findNodeById(selectedNodeId);
-        if (currentNode && currentNode.parentId !== null) {
-            const parentNode = findNodeById(currentNode.parentId);
-            if (parentNode) {
-                const siblingId = 'node-' + Date.now();
-                const siblingNode = createNode(siblingId, 'New Sibling', parentNode.id, currentNode.x, currentNode.y + 70); // Unter dem aktuellen Knoten
-                renderMindmap();
-                selectNode(null, siblingId);
-                showToast('Sibling node added!', 'success');
-            }
-        } else {
-            showToast('Cannot add sibling to a root node or no node selected!', 'error');
-        }
-    } else {
-        showToast('Please select a node first to add a sibling!', 'error');
-    }
-}
-
-function deleteSelectedNode() {
-    if (selectedNodeId) {
-        const nodeToDelete = findNodeById(selectedNodeId);
-        if (nodeToDelete) {
-            // Rekursive Funktion zum Löschen von Kindern
-            function deleteChildren(node) {
-                node.children.forEach(childId => {
-                    const childNode = findNodeById(childId);
-                    if (childNode) {
-                        deleteChildren(childNode); // Rekursiver Aufruf
-                    }
-                });
-                nodes.delete(node.id); // Knoten selbst löschen
-            }
-
-            deleteChildren(nodeToDelete); // Beginne mit dem Löschen der Kinder des ausgewählten Knotens
-
-            // Entferne den Knoten aus der Kinderliste seines Elternteils
-            if (nodeToDelete.parentId !== null) {
-                const parent = findNodeById(nodeToDelete.parentId);
-                if (parent) {
-                    parent.children = parent.children.filter(childId => childId !== nodeToDelete.id);
+    function drawLines() {
+        svg.innerHTML = '';
+        nodes.forEach(node => {
+            if (node.parentId) {
+                const parentNode = nodes.find(p => p.id === node.parentId);
+                if (parentNode && parentNode.element && node.element) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    const pRect = parentNode.element.getBoundingClientRect(); 
+                    const cRect = node.element.getBoundingClientRect();
+                    const containerRect = mindmapContainer.getBoundingClientRect();
+                    
+                    const x1 = (pRect.left - containerRect.left + pRect.width / 2) + mindmapContainer.scrollLeft;
+                    const y1 = (pRect.top - containerRect.top + pRect.height / 2) + mindmapContainer.scrollTop;
+                    const x2 = (cRect.left - containerRect.left + cRect.width / 2) + mindmapContainer.scrollLeft;
+                    const y2 = (cRect.top - containerRect.top + cRect.height / 2) + mindmapContainer.scrollTop;
+                    
+                    line.setAttribute('x1', x1); 
+                    line.setAttribute('y1', y1); 
+                    line.setAttribute('x2', x2); 
+                    line.setAttribute('y2', y2);
+                    line.setAttribute('stroke', 'gray'); 
+                    line.setAttribute('stroke-width', '2');
+                    line.dataset.parentId = parentNode.id; 
+                    line.dataset.childId = node.id;
+                    svg.appendChild(line);
                 }
             }
-            
-            selectedNodeId = null; // Auswahl aufheben
-            renderMindmap();
-            showToast(`Node "${nodeToDelete.text}" and its children deleted.`, 'success');
-        }
-    } else {
-        showToast('No node selected for deletion!', 'error');
-    }
-}
-
-function clearMap() {
-    if (confirm("Are you sure you want to clear the entire mind map? This action cannot be undone.")) {
-        nodes.clear();
-        selectedNodeId = null;
-        renderMindmap();
-        showToast('Mind map cleared!', 'success');
-    }
-}
-
-function saveMap() {
-    if (nodes.size === 0) {
-        showToast('No nodes to save!', 'info');
-        return;
-    }
-    const nodesArray = Array.from(nodes.values()); // Map zu Array konvertieren
-    const dataStr = JSON.stringify(nodesArray, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'mindmap.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('Mind map saved as JSON!', 'success');
-}
-
-// Hinweis: Load Map Funktion ist nicht direkt über einen Button verfügbar,
-// aber du könntest sie über Drag-and-Drop oder ein Date-Input implementieren, falls nötig.
-// Für den "Ursprungszustand" lassen wir sie hier erstmal als Kommentar.
-/*
-function loadMap(jsonString) {
-    try {
-        const loadedNodesArray = JSON.parse(jsonString);
-        nodes.clear();
-        selectedNodeId = null;
-        loadedNodesArray.forEach(node => {
-            nodes.set(node.id, node);
         });
-        renderMindmap();
-        showToast('Mind map loaded successfully!', 'success');
-    } catch (e) {
-        showToast('Error loading map: Invalid JSON!', 'error');
-        console.error(e);
     }
-}
-*/
+    window.addEventListener('resize', drawLines); 
+    mindmapContainer.addEventListener('scroll', drawLines);
 
-// --- Tastatur-Shortcuts ---
-function handleKeyDown(event) {
-    if (shortcutWindow.classList.contains('show')) {
-        // Wenn das Shortcut-Fenster offen ist, keine Aktionen auslösen
-        return;
-    }
-
-    const isCtrlCmd = event.ctrlKey || event.metaKey; // Ctrl für Windows/Linux, Cmd für Mac
-    const isShift = event.shiftKey;
-    const isAlt = event.altKey;
-
-    // Verhinderung von Standard-Browser-Aktionen
-    if ((isCtrlCmd && event.key === 's') || (isCtrlCmd && event.key === 'p') || (event.key === 'Tab')) {
-        event.preventDefault();
+    function handleNodeMouseDown(e) {
+        if (e.target.tagName === 'INPUT' || e.target.closest('button') || e.target.closest('.node-controls input[type="color"]')) return;
+        activeDragNodeData = nodes.find(n => n.id === e.currentTarget.id);
+        if (!activeDragNodeData || !activeDragNodeData.element) { activeDragNodeData = null; return; }
+        e.stopPropagation();
+        selectNode(activeDragNodeData.id); 
+        activeDragNodeData.element.classList.add('dragging');
+        const rect = activeDragNodeData.element.getBoundingClientRect(); 
+        const containerRect = mindmapContainer.getBoundingClientRect();
+        dragOffsetX = e.clientX - (rect.left - containerRect.left); 
+        dragOffsetY = e.clientY - (rect.top - containerRect.top);
+        document.addEventListener('mousemove', handleDocumentMouseMove);
+        document.addEventListener('mouseup', handleDocumentMouseUp, { once: true });
     }
 
-    switch (event.key) {
-        case 'r': // R for Root Node
-            addRootNode();
-            break;
-        case 'Enter':
-        case 'Tab':
-            if (isShift) {
-                addSiblingNode();
-            } else {
-                addChildNode();
+    function handleDocumentMouseMove(e) {
+        if (!activeDragNodeData || !activeDragNodeData.element) { cleanupGlobalDragListeners(); return; }
+        e.preventDefault();
+        const containerRect = mindmapContainer.getBoundingClientRect();
+        let newX = e.clientX - containerRect.left - dragOffsetX + mindmapContainer.scrollLeft;
+        let newY = e.clientY - containerRect.top - dragOffsetY + mindmapContainer.scrollTop;
+        newX = Math.max(0, Math.min(newX, mindmapContainer.scrollWidth - activeDragNodeData.element.offsetWidth));
+        newY = Math.max(0, Math.min(newY, mindmapContainer.scrollHeight - activeDragNodeData.element.offsetHeight));
+        activeDragNodeData.x = newX; 
+        activeDragNodeData.y = newY;
+        activeDragNodeData.element.style.left = `${newX}px`; 
+        activeDragNodeData.element.style.top = `${newY}px`;
+        drawLines();
+        clearAllHighlights();
+        currentDragTargetInfo = { type: null, id: null, lineElement: null, lineParentId: null, lineChildId: null };
+        const dropPointX = newX + activeDragNodeData.element.offsetWidth / 2;
+        const dropPointY = newY + activeDragNodeData.element.offsetHeight / 2;
+        const elementsUnderDropPoint = document.elementsFromPoint( (activeDragNodeData.element.getBoundingClientRect().left + activeDragNodeData.element.offsetWidth / 2), (activeDragNodeData.element.getBoundingClientRect().top + activeDragNodeData.element.offsetHeight / 2) );
+        let foundNodeTarget = false;
+        for (const el of elementsUnderDropPoint) {
+            if (el.classList && el.classList.contains('node') && el.id !== activeDragNodeData.id) {
+                const targetNodeData = nodes.find(n => n.id === el.id);
+                if (targetNodeData && !isDescendant(activeDragNodeData, targetNodeData.id) && targetNodeData.id !== activeDragNodeData.parentId) {
+                    el.classList.add('drop-target-highlight');
+                    currentDragTargetInfo = { type: 'node', id: el.id, lineElement: null, lineParentId: null, lineChildId: null };
+                    foundNodeTarget = true; 
+                    break;
+                }
             }
-            break;
-        case 'Delete':
-        case 'Backspace':
-            deleteSelectedNode();
-            break;
-        case 's':
-            if (isCtrlCmd) {
-                saveMap();
+        }
+        if (!foundNodeTarget) {
+            const allLines = Array.from(svg.querySelectorAll('line'));
+            for (const line of allLines) {
+                const linePId = line.dataset.parentId; 
+                const lineCId = line.dataset.childId;
+                if (linePId === activeDragNodeData.id || lineCId === activeDragNodeData.id || (activeDragNodeData.parentId === linePId && activeDragNodeData.childrenIds.includes(lineCId))) continue;
+                const x1 = parseFloat(line.getAttribute('x1'));
+                const y1 = parseFloat(line.getAttribute('y1'));
+                const x2 = parseFloat(line.getAttribute('x2'));
+                const y2 = parseFloat(line.getAttribute('y2'));
+                if (isPointNearLine(dropPointX, dropPointY, x1, y1, x2, y2, 25)) {
+                    line.classList.add('line-drop-target-highlight');
+                    currentDragTargetInfo = { type: 'line', id: null, lineElement: line, lineParentId: linePId, lineChildId: lineCId }; 
+                    break;
+                }
             }
-            break;
-        case 'p':
-            if (isCtrlCmd) {
-                takeScreenshot();
-            }
-            break;
-        case 'h':
-            if (isAlt) {
-                toggleShortcuts();
-            }
-            break;
-        // Navigation (optional, falls du das später hinzufügen möchtest)
-        // case 'ArrowUp':
-        // case 'ArrowDown':
-        // case 'ArrowLeft':
-        // case 'ArrowRight':
-        //    break;
+        }
     }
-}
 
-// --- Screenshot Funktionalität ---
-function takeScreenshot() {
-    // Umgebende Box des gesamten Inhalts (Knoten und Linien) berechnen
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    nodes.forEach(node => {
-        minX = Math.min(minX, node.x - node.radius);
-        minY = Math.min(minY, node.y - node.radius);
-        maxX = Math.max(maxX, node.x + node.radius);
-        maxY = Math.max(maxY, node.y + node.radius);
+    function handleDocumentMouseUp(e) {
+        if (activeDragNodeData && activeDragNodeData.element) {
+            activeDragNodeData.element.classList.remove('dragging'); 
+            clearAllHighlights();
+            if (currentDragTargetInfo.type === 'node' && currentDragTargetInfo.id) {
+                const dropTargetNode = nodes.find(n => n.id === currentDragTargetInfo.id);
+                if (dropTargetNode && activeDragNodeData.id !== dropTargetNode.id && !isDescendant(activeDragNodeData, dropTargetNode.id) && activeDragNodeData.parentId !== dropTargetNode.id) {
+                    if (activeDragNodeData.parentId) { 
+                        const oldParent = nodes.find(n => n.id === activeDragNodeData.parentId); 
+                        if (oldParent) oldParent.childrenIds = oldParent.childrenIds.filter(id => id !== activeDragNodeData.id); 
+                    }
+                    activeDragNodeData.parentId = dropTargetNode.id;
+                    if (!dropTargetNode.childrenIds.includes(activeDragNodeData.id)) dropTargetNode.childrenIds.push(activeDragNodeData.id);
+                }
+            } else if (currentDragTargetInfo.type === 'line' && currentDragTargetInfo.lineElement) {
+                const { lineParentId, lineChildId } = currentDragTargetInfo;
+                const originalParentOfLine = nodes.find(n => n.id === lineParentId); 
+                const originalChildOfLine = nodes.find(n => n.id === lineChildId);
+                if (originalParentOfLine && originalChildOfLine && activeDragNodeData.id !== originalParentOfLine.id && activeDragNodeData.id !== originalChildOfLine.id && !isDescendant(activeDragNodeData, originalParentOfLine.id) && !isDescendant(activeDragNodeData, originalChildOfLine.id) ) {
+                    if (activeDragNodeData.parentId) { 
+                        const oldParent = nodes.find(n => n.id === activeDragNodeData.parentId); 
+                        if (oldParent) oldParent.childrenIds = oldParent.childrenIds.filter(id => id !== activeDragNodeData.id); 
+                    }
+                    activeDragNodeData.parentId = originalParentOfLine.id;
+                    if (!originalParentOfLine.childrenIds.includes(activeDragNodeData.id)) originalParentOfLine.childrenIds.push(activeDragNodeData.id);
+                    originalParentOfLine.childrenIds = originalParentOfLine.childrenIds.filter(id => id !== originalChildOfLine.id);
+                    originalChildOfLine.parentId = activeDragNodeData.id;
+                    if (!activeDragNodeData.childrenIds.includes(originalChildOfLine.id)) activeDragNodeData.childrenIds.push(originalChildOfLine.id);
+                    else { activeDragNodeData.childrenIds = activeDragNodeData.childrenIds.filter(id => id !== originalChildOfLine.id); activeDragNodeData.childrenIds.push(originalChildOfLine.id); }
+                }
+            }
+            drawLines();
+        }
+        cleanupGlobalDragListeners();
+    }
+
+    function cleanupGlobalDragListeners() { 
+        if (activeDragNodeData && activeDragNodeData.element && activeDragNodeData.element.classList.contains('dragging')) { 
+            activeDragNodeData.element.classList.remove('dragging'); 
+        } 
+        activeDragNodeData = null; 
+        currentDragTargetInfo = { type: null, id: null, lineElement: null, lineParentId: null, lineChildId: null }; 
+        document.removeEventListener('mousemove', handleDocumentMouseMove); 
+    }
+
+    function clearAllHighlights() { 
+        document.querySelectorAll('.node.drop-target-highlight').forEach(n => n.classList.remove('drop-target-highlight')); 
+        document.querySelectorAll('line.line-drop-target-highlight').forEach(l => l.classList.remove('line-drop-target-highlight'));
+    }
+
+    function isDescendant(pParent, cId) { 
+        if (!pParent || !pParent.childrenIds) return false; 
+        if (pParent.childrenIds.includes(cId)) return true; 
+        for (const id of pParent.childrenIds) { 
+            const child = nodes.find(n => n.id === id); 
+            if (child && isDescendant(child, cId)) return true; 
+        } 
+        return false; 
+    }
+
+    function getDarkerColor(hex) { 
+        if (!hex || hex.length < 7) return '#000000'; 
+        let r = parseInt(hex.slice(1,3),16);
+        let g = parseInt(hex.slice(3,5),16);
+        let b = parseInt(hex.slice(5,7),16); 
+        r = Math.max(0, r - 40); 
+        g = Math.max(0, g - 40); 
+        b = Math.max(0, b - 40); 
+        return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; 
+    }
+
+    function createDummyNodeElement(txt) { 
+        const d = document.createElement('div'); 
+        d.classList.add('node'); 
+        d.style.cssText = 'position:absolute;visibility:hidden;left:-10000px;'; 
+        const i = document.createElement('input'); 
+        i.classList.add('node-text-input'); 
+        i.value = txt; 
+        d.appendChild(i); 
+        document.body.appendChild(d); 
+        return d; 
+    }
+
+    function showToast(message) { 
+        if (toastTimeout) clearTimeout(toastTimeout); 
+        toastNotification.textContent = message; 
+        toastNotification.classList.add('show'); 
+        toastTimeout = setTimeout(() => { 
+            toastNotification.classList.remove('show'); 
+        }, 3000); 
+    }
+
+    function toggleShortcutVisibility() { shortcutWindow.classList.toggle('hidden');}
+    function handleResetDefaultColors() { 
+        defaultNodeColorPicker.value = initialDefaultNodeColor; 
+        defaultTextColorPicker.value = initialDefaultTextColor; 
+        showToast("Default colors have been reset."); 
+    }
+
+    toggleShortcutBtn.addEventListener('click', toggleShortcutVisibility);
+    closeShortcutBtn.addEventListener('click', () => { shortcutWindow.classList.add('hidden'); });
+    shortcutHeader.addEventListener('mousedown', (e) => { 
+        if (e.target === closeShortcutBtn || e.target === resizeHandle || e.target.closest('button')) return; 
+        isDraggingShortcutWindow = true; 
+        shortcutWindowDragX = e.clientX - shortcutWindow.offsetLeft; 
+        shortcutWindowDragY = e.clientY - shortcutWindow.offsetTop; 
+        shortcutWindow.style.cursor = 'grabbing'; 
+        document.addEventListener('mousemove', dragShortcutWindow); 
+        document.addEventListener('mouseup', stopDragOrResizeShortcutWindow, {once: true}); 
     });
 
-    if (nodes.size === 0) {
-        showToast('No nodes to screenshot!', 'info');
-        return;
+    resizeHandle.addEventListener('mousedown', (e) => { 
+        e.stopPropagation(); 
+        isResizingShortcutWindow = true; 
+        shortcutWindowResizeStartX = e.clientX; 
+        shortcutWindowResizeStartY = e.clientY; 
+        shortcutWindowInitialWidth = shortcutWindow.offsetWidth; 
+        shortcutWindowInitialHeight = shortcutWindow.offsetHeight; 
+        document.addEventListener('mousemove', resizeShortcutWindow); 
+        document.addEventListener('mouseup', stopDragOrResizeShortcutWindow, {once: true}); 
+    });
+
+    function dragShortcutWindow(e) { 
+        if (!isDraggingShortcutWindow) return; 
+        let nX = e.clientX - shortcutWindowDragX;
+        let nY = e.clientY - shortcutWindowDragY; 
+        const bR = document.body.getBoundingClientRect(); 
+        nX = Math.max(0, Math.min(nX, bR.width - shortcutWindow.offsetWidth)); 
+        nY = Math.max(0, Math.min(nY, bR.height - shortcutWindow.offsetHeight)); 
+        shortcutWindow.style.left = `${nX}px`; 
+        shortcutWindow.style.top = `${nY}px`; 
     }
 
-    // Füge einen kleinen Puffer hinzu
-    const padding = 50;
-    const captureX = minX - padding;
-    const captureY = minY - padding;
-    const captureWidth = (maxX - minX) + 2 * padding;
-    const captureHeight = (maxY - minY) + 2 * padding;
+    function resizeShortcutWindow(e) { 
+        if (!isResizingShortcutWindow) return; 
+        const dX = e.clientX - shortcutWindowResizeStartX;
+        const dY = e.clientY - shortcutWindowResizeStartY; 
+        shortcutWindow.style.width = `${Math.max(200, shortcutWindowInitialWidth + dX)}px`; 
+        shortcutWindow.style.height = `${Math.max(100, shortcutWindowInitialHeight + dY)}px`; 
+    }
 
-    // HTML2Canvas kann Probleme mit SVG haben. Hier wird versucht, das SVG direkt zu rendern.
-    // Eine bessere Lösung wäre, das SVG in ein Canvas-Kontext zu zeichnen,
-    // aber html2canvas bietet oft eine "useCORS: true" Option, die helfen kann.
+    function stopDragOrResizeShortcutWindow() { 
+        isDraggingShortcutWindow = false; 
+        isResizingShortcutWindow = false; 
+        shortcutWindow.style.cursor = 'default'; 
+        shortcutHeader.style.cursor = 'move'; 
+        document.removeEventListener('mousemove', dragShortcutWindow); 
+        document.removeEventListener('mousemove', resizeShortcutWindow); 
+    }
 
-    html2canvas(mindmapContainer, {
-        backgroundColor: mindmapContainer.style.backgroundColor || window.getComputedStyle(mindmapContainer).backgroundColor,
-        width: captureWidth,
-        height: captureHeight,
-        x: captureX,
-        y: captureY,
-        scale: 2, // Für bessere Auflösung
-        useCORS: true // Wichtig für externe Ressourcen wie Bilder, auch wenn hier nicht direkt genutzt
-    }).then(canvas => {
+    function downloadMapData() { 
+        if (nodes.length === 0) { showToast("The mind map is empty."); return; } 
+        const nS = nodes.map(n => ({ id:n.id, text:n.text, x:n.x, y:n.y, parentId:n.parentId, bgColor:n.bgColor, textColor:n.textColor, childrenIds:n.childrenIds })); 
+        const dS = JSON.stringify({ nodes:nS, nodeIdCounter }, null, 2); 
+        const dU = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dS); 
+        const eN = 'mindmap.json'; 
+        let lE = document.createElement('a'); 
+        lE.setAttribute('href',dU); 
+        lE.setAttribute('download',eN); 
+        lE.click(); 
+    }
+
+    // Überarbeitete takeScreenshot Funktion
+    function takeScreenshot() {
+        if (nodes.length === 0) {
+            showToast("The mind map is empty.");
+            return;
+        }
+        if (typeof html2canvas === 'undefined') {
+            showToast('html2canvas not loaded.');
+            return;
+        }
+
         const format = screenshotFormatSelect.value;
+        // Die Checkbox steuert, ob die Datei HERUNTERGELADEN werden soll
+        const shouldDownloadFile = screenshotToClipboardCb.checked; 
 
-        if (screenshotToClipboardCb.checked) {
-            // Download-Option aktiv, also speichern
-            if (format === 'pdf') {
-                const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                const pdf = new window.jspdf.jsPDF({
-                    orientation: captureWidth > captureHeight ? 'l' : 'p',
-                    unit: 'px',
-                    format: [captureWidth, captureHeight]
-                });
-                pdf.addImage(imgData, 'JPEG', 0, 0, captureWidth, captureHeight);
-                pdf.save('mindmap.pdf');
+        // Prüfung, ob die jspdf-Bibliothek für PDF-Export geladen ist (nur relevant, wenn PDF heruntergeladen werden soll)
+        if (format === 'pdf' && shouldDownloadFile && (typeof jspdf === 'undefined' || typeof jspdf.jsPDF === 'undefined')) {
+            showToast('jsPDF library not loaded for PDF export. Select another format or ensure library is loaded.');
+            return;
+        }
+
+        // Temporäre Zustandsänderungen für den Screenshot
+        const shortcutWindowWasVisible = !shortcutWindow.classList.contains('hidden');
+        if (shortcutWindowWasVisible) shortcutWindow.classList.add('hidden');
+
+        const currentlySelectedElement = selectedNodeId ? document.getElementById(selectedNodeId) : null;
+        if (currentlySelectedElement) currentlySelectedElement.classList.remove('selected');
+
+        document.querySelectorAll('.node-controls').forEach(el => el.style.display = 'none');
+
+        const options = {
+            width: mindmapContainer.scrollWidth,
+            height: mindmapContainer.scrollHeight,
+            windowWidth: mindmapContainer.scrollWidth,
+            windowHeight: mindmapContainer.scrollHeight,
+            backgroundColor: '#ffffff',
+            logging: false,
+            useCORS: true
+        };
+
+        html2canvas(mindmapContainer, options).then(canvas => {
+            // Erste Bedingung: Soll die Datei heruntergeladen werden (Checkbox ist an)?
+            if (shouldDownloadFile) {
+                // Wenn "Download file" Haken drin ist, immer herunterladen
+                downloadCanvasImage(canvas, format);
             } else {
-                const link = document.createElement('a');
-                link.download = `mindmap.${format}`;
-                link.href = canvas.toDataURL(`image/${format === 'jpeg' ? 'jpeg' : 'png'}`);
-                link.click();
+                // Wenn "Download file" Haken NICHT drin ist, versuche, in die Zwischenablage zu kopieren
+                // Dies ist NUR für PNG möglich
+                if (format === 'png') {
+                    canvas.toBlob(async function(blob) {
+                        if (navigator.clipboard && navigator.clipboard.write) {
+                            try {
+                                const clipboardItem = { [blob.type]: blob };
+                                await navigator.clipboard.write([new ClipboardItem(clipboardItem)]);
+                                showToast('Screenshot (PNG) copied to clipboard!');
+                            } catch (err) {
+                                console.error('Failed to copy screenshot to clipboard:', err);
+                                showToast('Failed to copy to clipboard. Please select "Download file" to save as PNG.');
+                                // Hier kein Fallback zum Download, da dies explizit nicht gewünscht ist, wenn der Haken fehlt.
+                                // Der Nutzer muss den Haken setzen, um herunterzuladen.
+                            }
+                        } else {
+                            showToast('Clipboard API not supported. Please select "Download file" to save as PNG.');
+                        }
+                    }, 'image/png');
+                } else {
+                    // Wenn kein Download gewünscht, aber Format nicht PNG ist (z.B. PDF/JPEG ohne Download-Haken)
+                    showToast(`Copy to clipboard is only supported for PNG. Please select "Download file" to save as ${format.toUpperCase()}.`);
+                }
             }
-            showToast('Screenshot downloaded!', 'success');
+        }).catch(err => {
+            console.error("Screenshot error:", err);
+            showToast("An error occurred while taking the screenshot.");
+        })
+        .finally(() => {
+            // Rückgängigmachen der temporären Zustandsänderungen
+            if (shortcutWindowWasVisible) shortcutWindow.classList.remove('hidden');
+            if (currentlySelectedElement) currentlySelectedElement.classList.add('selected');
+            document.querySelectorAll('.node-controls').forEach(el => el.style.display = '');
+        });
+    }
 
-        } else {
-            // In die Zwischenablage kopieren (nur PNG unterstützt)
-            canvas.toBlob(function(blob) {
-                const item = new ClipboardItem({'image/png': blob});
-                navigator.clipboard.write([item]).then(function() {
-                    showToast('Screenshot copied to clipboard!', 'success');
-                }).catch(function(error) {
-                    showToast('Failed to copy screenshot to clipboard. Browser support or permissions missing.', 'error');
-                    console.error('Clipboard write failed:', error);
+    // downloadCanvasImage bleibt wie in der vorherigen Antwort beschrieben
+    function downloadCanvasImage(canvas, format = 'png') {
+        let imageDataURL;
+        let fileExtension = format;
+
+        if (format === 'jpeg') {
+            imageDataURL = canvas.toDataURL('image/jpeg', 0.9);
+        } else if (format === 'pdf') {
+            try {
+                const PDFCreator = window.jspdf.jsPDF || (typeof jsPDF !== 'undefined' ? jsPDF : null);
+                if (!PDFCreator) {
+                    showToast("jsPDF library not found. Downloading as PNG.");
+                    imageDataURL = canvas.toDataURL('image/png');
+                    fileExtension = 'png';
+                    triggerDownload(imageDataURL, `mindmap.${fileExtension}`);
+                    return;
+                }
+                const pdf = new PDFCreator({
+                    orientation: canvas.width > canvas.height ? 'l' : 'p',
+                    unit: 'px',
+                    format: [canvas.width, canvas.height]
                 });
-            }, 'image/png');
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
+                pdf.save('mindmap.pdf');
+                showToast('PDF downloaded successfully!');
+                return;
+            } catch (e) {
+                console.error("PDF generation error:", e);
+                showToast("Error generating PDF. Downloading as PNG.");
+                imageDataURL = canvas.toDataURL('image/png');
+                fileExtension = 'png';
+                triggerDownload(imageDataURL, `mindmap.${fileExtension}`);
+                return;
+            }
+        } else {
+            imageDataURL = canvas.toDataURL('image/png');
+            fileExtension = 'png';
         }
-    }).catch(error => {
-        showToast('Error taking screenshot. Please check browser console.', 'error');
-        console.error('Screenshot error:', error);
+        triggerDownload(imageDataURL, `mindmap.${fileExtension}`);
+    }
+
+    // triggerDownload bleibt wie in der vorherigen Antwort beschrieben
+    function triggerDownload(imageURL, fileName){
+        const link = document.createElement('a');
+        link.href = imageURL;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast(`${fileName.split('.').pop().toUpperCase()} downloaded!`);
+    }
+
+    function clearMap() { 
+        nodes.forEach(n => { if (n.element) n.element.remove(); }); 
+        nodes = []; 
+        nodeIdCounter = 0; 
+        selectedNodeId = null; 
+        drawLines(); 
+    }
+
+    mindmapContainer.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT') return; 
+        if (e.altKey && e.key.toLowerCase() === 'h') { e.preventDefault(); toggleShortcutVisibility(); return; }
+        if (!selectedNodeId && !(e.ctrlKey || e.metaKey) && e.key.toLowerCase() !== 'r') return;
+        
+        switch (e.key.toLowerCase()) {
+            case 'enter': 
+            case 'tab': 
+                if(selectedNodeId){
+                    e.preventDefault(); 
+                    if(e.shiftKey){
+                        const s=nodes.find(n=>n.id===selectedNodeId); 
+                        if(s)addNode(s.parentId);
+                    }else{
+                        addNode(selectedNodeId);
+                    }
+                } 
+                break;
+            case 'delete': 
+            case 'backspace': 
+                if(selectedNodeId){
+                    e.preventDefault();
+                    deleteNode(selectedNodeId);
+                } 
+                break;
+            case 's': 
+                if(e.ctrlKey||e.metaKey){
+                    e.preventDefault();
+                    downloadMapData();
+                } 
+                break;
+            case 'p': 
+                if(e.ctrlKey||e.metaKey){
+                    e.preventDefault();
+                    takeScreenshot();
+                } 
+                break;
+            case 'r': 
+                if(!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey){
+                    e.preventDefault();
+                    addNode(null);
+                } 
+                break;
+        }
     });
-}
 
+    addRootNodeBtn.addEventListener('click', () => addNode(null));
+    clearMapBtn.addEventListener('click', clearMap);
+    downloadMapBtn.addEventListener('click', downloadMapData);
+    screenshotBtn.addEventListener('click', takeScreenshot);
+    resetDefaultColorsBtn.addEventListener('click', handleResetDefaultColors);
 
-// --- Drag-Funktionen (notwendig für D3.js) ---
-function dragstarted(event, node) {
-    event.sourceEvent.stopPropagation(); // Verhindert Klicks auf Hintergrund
-    d3.select(`#node-${node.id}`).raise().attr('stroke', 'orange');
-    selectNode(null, node.id); // Knoten auswählen, wenn Drag beginnt
-}
-
-function dragged(event, node) {
-    node.x = event.x;
-    node.y = event.y;
-    drawNode(node);
-    updateConnections();
-}
-
-function dragended(event, node) {
-    // Setze den Rand zurück, wenn der Knoten nicht mehr ausgewählt ist
-    d3.select(`#node-${node.id}`).attr('stroke', selectedNodeId === node.id ? 'orange' : 'black');
-    showToast(`Node "${node.text}" moved.`, 'info');
-}
-
-// --- Shortcut Window Funktionalität ---
-// Draggable
-d3.select('#shortcut-window').call(d3.drag()
-    .on('start', function() {
-        d3.select(this).raise().style('cursor', 'grabbing');
-    })
-    .on('drag', function(event) {
-        d3.select(this)
-            .style('left', `${event.x}px`)
-            .style('top', `${event.y}px`);
-    })
-    .on('end', function() {
-        d3.select(this).style('cursor', 'grab');
-    }));
-
-function toggleShortcuts() {
-    shortcutWindow.classList.toggle('show');
-    showToast(shortcutWindow.classList.contains('show') ? 'Shortcuts visible.' : 'Shortcuts hidden.', 'info');
-}
-
-// --- Knoten Größen Anpassung ---
-function adjustNodeSize(delta) {
-    if (selectedNodeId) {
-        const node = findNodeById(selectedNodeId);
-        if (node) {
-            node.radius = Math.max(10, node.radius + delta); // Mindestgröße 10
-            node.fontSize = Math.max(8, node.fontSize + (delta > 0 ? 1 : -1)); // Schriftgröße proportional anpassen
-            drawNode(node);
-            updateConnections();
-            showToast('Node size adjusted!', 'info');
-        }
-    } else {
-        showToast('Please select a node to adjust its size!', 'error');
-    }
-}
-
-// --- Standardfarben zurücksetzen ---
-function resetDefaultColors() {
-    DEFAULT_NODE_COLOR = "#add8e6"; // Hellblau
-    DEFAULT_TEXT_COLOR = "#000000"; // Schwarz
-    if (defaultNodeColorInput) defaultNodeColorInput.value = DEFAULT_NODE_COLOR;
-    if (defaultTextColorInput) defaultTextColorInput.value = DEFAULT_TEXT_COLOR;
-    showToast('Default colors reset!', 'info');
-}
-
-// Wenn ein Knoten ausgewählt ist, können seine Farben geändert werden (optional, hier nicht direkt per Button)
-// Du könntest hier eine Funktion einfügen, die die Farbe des ausgewählten Knotens ändert.
-/*
-function changeSelectedNodeColor(newColor) {
-    if (selectedNodeId) {
-        const node = findNodeById(selectedNodeId);
-        if (node) {
-            node.color = newColor;
-            drawNode(node);
-        }
-    }
-}
-
-function changeSelectedNodeTextColor(newColor) {
-    if (selectedNodeId) {
-        const node = findNodeById(selectedNodeId);
-        if (node) {
-            node.textColor = newColor;
-            drawNode(node);
-        }
-    }
-}
-*/
+    drawLines();
+    mindmapContainer.focus();
+});
