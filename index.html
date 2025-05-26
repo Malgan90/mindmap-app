@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-</head>
+    </head>
 <body>
     <div id="shortcut-window" class="draggable resizable">
         <div class="shortcut-header">
@@ -50,6 +50,12 @@
             </select>
         </div>
         <button id="toggleShortcutBtn" title="Toggle Shortcuts Visibility (Alt+H)">Shortcuts</button>
+        
+        <div class="size-settings-toolbar">
+            <label>Node Size:</label>
+            <button id="decreaseNodeSizeBtn" title="Decrease size of selected node">-</button>
+            <button id="increaseNodeSizeBtn" title="Increase size of selected node">+</button>
+        </div>
         <div class="color-settings-toolbar">
             <div class="default-color-pickers">
                 <label for="defaultNodeColor">Node Color:</label>
