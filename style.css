@@ -5,8 +5,8 @@
     --toolbar-text: white;
     --mindmap-bg: #fff;
     --mindmap-border: #ccc;
-    --node-default-bg: #add8e6; /* Light mode default node bg */
-    --node-default-text: #000000; /* Light mode default node text */
+    --node-default-bg: #add8e6;
+    --node-default-text: #000000;
     --node-border-color-default: dodgerblue;
     --shortcut-bg: rgba(245, 245, 245, 0.95);
     --shortcut-header-bg: #e0e0e0;
@@ -18,8 +18,8 @@
     --select-bg: #fff;
     --select-border: #ccc;
     --select-text: #000;
-    --line-color: #888; /* Farbe für die Verbindungslinien */
-    --button-generic-bg: #6c757d; /* Generischer Button-Hintergrund */
+    --line-color: #888;
+    --button-generic-bg: #6c757d;
 }
 
 body.dark-mode {
@@ -29,14 +29,14 @@ body.dark-mode {
     --toolbar-text: #f1f1f1;
     --mindmap-bg: #3a3a3a;
     --mindmap-border: #555;
-    --node-default-bg: #586776; /* Dark mode default node bg */
-    --node-default-text: #f1f1f1; /* Dark mode default node text */
+    --node-default-bg: #586776;
+    --node-default-text: #f1f1f1;
     --node-border-color-default: #77aaff;
     --shortcut-bg: rgba(40, 40, 40, 0.95);
     --shortcut-header-bg: #333;
     --shortcut-border: #555;
     --shortcut-text: #f1f1f1;
-    --input-focus-bg: rgba(80,80,80,0.7);
+    --input-focus-bg: transparent;
     --toast-bg: #ddd;
     --toast-text: #111;
     --select-bg: #555;
@@ -60,7 +60,6 @@ body {
     transition: background-color 0.3s, color 0.3s;
 }
 
-/* --- Shortcut Window --- */
 #shortcut-window {
     position: absolute;
     top: 10px;
@@ -97,7 +96,6 @@ body {
 .shortcut-content li { margin-bottom: 4px; }
 .resize-handle { width: 10px; height: 10px; background-color: var(--shortcut-border); position: absolute; right: 0; bottom: 0; cursor: nwse-resize; border-bottom-right-radius: 7px;}
 
-/* --- Toolbar --- */
 #toolbar {
     background-color: var(--toolbar-bg);
     padding: 8px 10px;
@@ -114,7 +112,7 @@ body {
 #toolbar button {
     padding: 8px 12px;
     margin: 5px;
-    color: white; /* Standard Textfarbe für die meisten Toolbar Buttons */
+    color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -124,19 +122,20 @@ body {
     transition: background-color 0.2s;
 }
 #toolbar button:hover { opacity: 0.85; }
+#toolbar button:disabled { opacity: 0.5; cursor: not-allowed; }
+
 
 #addRootNodeBtn { background-color: #5cb85c; }
 #clearMapBtn { background-color: #d9534f; }
 #downloadMapBtn { background-color: #337ab7; }
 #toggleShortcutBtn { background-color: var(--button-generic-bg); }
 #screenshotToClipboardBtn { background-color: #f0ad4e; }
-#toggleDarkModeBtn { background-color: var(--button-generic-bg); font-size: 1.2em; padding: 6px 10px;} /* Etwas größer für Icon */
+#toggleDarkModeBtn { background-color: var(--button-generic-bg); font-size: 1.2em; padding: 6px 10px;}
 
 
 .screenshot-download-options {
     display: flex;
     align-items: center;
-    /* background-color: var(--toolbar-bg); Kein eigener Hintergrund mehr, da die Buttons schon farbig sind */
     border-radius: 4px;
     margin: 0 5px;
     height: 35px;
@@ -155,7 +154,7 @@ body {
     border-radius: 4px;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
-    border: 1px solid #5bc0de; /* Gleiche Farbe wie Button-Rand */
+    border: 1px solid #5bc0de;
     background-color: var(--select-bg);
     color: var(--select-text);
     cursor: pointer;
@@ -169,17 +168,21 @@ body {
     align-items: center;
     margin-left: 10px;
     padding: 5px 8px;
-    background-color: #4a4a4a; /* Eigener Hintergrund für diese Gruppe */
+    background-color: #4a4a4a;
     border-radius: 4px;
     height: 35px;
     box-sizing: border-box;
 }
 body.dark-mode .color-settings-toolbar {
-    background-color: #303030; /* Etwas dunklerer Hintergrund im Dark Mode */
+    background-color: #303030;
+}
+.color-settings-toolbar button {
+    background-color: var(--button-generic-bg);
 }
 
+
 .default-color-pickers label {
-    color: var(--toolbar-text); /* Textfarbe aus Toolbar-Variable */
+    color: var(--toolbar-text);
     margin-left: 10px;
     margin-right: 5px;
     font-size: 0.85em;
@@ -187,46 +190,69 @@ body.dark-mode .color-settings-toolbar {
 .default-color-pickers input[type="color"] {
     width: 30px;
     height: 20px;
-    border: 1px solid #555; /* Fester Rand, da Picker schwer zu stylen sind */
+    border: 1px solid #555;
     padding: 0;
     cursor: pointer;
     border-radius: 3px;
     vertical-align: middle;
 }
-#resetDefaultColorsBtn { 
-    margin-left: 10px; 
-    padding: 4px 8px; 
-    font-size: 0.8em; 
-    background-color: var(--button-generic-bg); 
-    height: auto;
+
+#resetDefaultColorsBtn {
+    margin-left: 10px;
+    padding: 8px 12px;
+    font-size: 0.9em;
+    background-color: var(--button-generic-bg);
+    height: 35px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 4px;
+    box-sizing: border-box;
 }
 
-
-/* --- Mindmap Container & Nodes --- */
-#mindmap-container {
+#mindmap-wrapper {
     width: 95vw;
     height: calc(100vh - 70px);
-    border: 2px solid var(--mindmap-border);
-    position: relative;
     overflow: auto;
+    border: 2px solid var(--mindmap-border);
     background-color: var(--mindmap-bg);
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    outline: none;
     transition: background-color 0.3s, border-color 0.3s;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    position: relative;
 }
-#mindmap-svg line { /* Linienfarbe über CSS Variable steuern */
+
+#mindmap-container {
+    width: 2000px;
+    height: 1500px;
+    position: relative;
+    outline: none;
+}
+
+#mindmap-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+
+#mindmap-svg line {
     stroke: var(--line-color);
     transition: stroke 0.3s;
+    stroke-width: 2px;
 }
 
 .node {
     position: absolute;
-    /* background-color wird dynamisch via JS gesetzt (nodeData.bgColor) */
     border: 2px solid var(--node-border-color-default);
-    border-radius: 50%; /* RUNDE NODES */
-    min-width: 100px;   /* Für runde Nodes: min-width und min-height gleich halten */
+    border-radius: 50%;
+    min-width: 100px;
     min-height: 100px;
-    padding: 10px; /* Padding beeinflusst die Gesamtgröße nicht, da box-sizing: border-box */
+    padding: 10px;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
     cursor: grab;
     display: flex;
@@ -237,32 +263,37 @@ body.dark-mode .color-settings-toolbar {
     box-sizing: border-box;
     text-align: center;
     user-select: none;
-    transition: border-color 0.3s, background-color 0.3s; /* Sanfter Übergang für Node-Farben */
+    transition: border-color 0.3s, background-color 0.3s, border-radius 0.2s;
 }
+
 .node.selected {
-    border-color: orange !important; /* Bleibt für Selektion auffällig */
+    border-color: orange !important;
     box-shadow: 0 0 10px orange !important;
 }
-.node.dragging { cursor: grabbing; box-shadow: 4px 4px 8px rgba(0,0,0,0.3); z-index: 1000; opacity: 0.7; }
+.node.dragging {
+    cursor: grabbing;
+    box-shadow: 4px 4px 8px rgba(0,0,0,0.3);
+    z-index: 1000;
+    opacity: 0.9;
+}
 .node.drop-target-highlight { border-color: limegreen !important; box-shadow: 0 0 15px limegreen !important; }
 .line-drop-target-highlight { stroke: limegreen !important; stroke-width: 4px !important; }
 
 .node-text-input {
     width: 90%;
     padding: 6px;
-    margin-bottom: 8px;
+    margin-bottom: 0;
     border: 1px solid transparent;
     border-radius: 4px;
     text-align: center;
     font-size: 1em;
-    background-color: transparent; /* Wichtig, damit Node BG durchscheint */
+    background-color: transparent;
     outline: none;
     max-width: 100%;
     pointer-events: all;
-    /* color wird dynamisch via JS gesetzt (nodeData.textColor) */
 }
 .node-text-input:focus {
-    border: 1px solid var(--text-color); /* Randfarbe an Textfarbe anpassen */
+    border: 1px solid var(--text-color);
     background-color: var(--input-focus-bg);
 }
 
@@ -271,33 +302,33 @@ body.dark-mode .color-settings-toolbar {
     flex-direction: column;
     align-items: center;
     position: absolute;
-    bottom: -100px;
+    top: calc(100% + 10px);
     left: 50%;
     transform: translateX(-50%);
-    background-color: var(--shortcut-bg); /* Wiederverwendung für Konsistenz */
+    background-color: var(--shortcut-bg);
     padding: 10px;
     border-radius: 8px;
     box-shadow: 0 3px 7px rgba(0,0,0,0.3);
     pointer-events: all;
-    z-index: 15;
+    z-index: 20;
     width: max-content;
     border: 1px solid var(--shortcut-border);
 }
-.node.selected .node-controls { display: flex; }
+.node.color-controls-active .node-controls { display: flex; }
 
 .node-controls .buttons-row { display: flex; margin-bottom: 10px; }
-.node-controls button { /* Gilt für Add/Delete Buttons in Controls */
-    font-size: 1em;
+.node-controls button {
+    font-size: 0.9em;
     font-weight: bold;
-    padding: 5px 8px;
-    margin: 0 4px;
+    padding: 4px 6px;
+    margin: 0 3px;
     cursor: pointer;
-    background-color: var(--bg-color); /* Hintergrund an Haupt-BG anpassen */
-    color: var(--text-color); /* Text an Haupt-Text anpassen */
-    border: 1px solid var(--mindmap-border); /* Rand an Haupt-Rand anpassen */
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--mindmap-border);
     border-radius: 5px;
-    min-width: 30px;
-    height: 30px;
+    min-width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -309,7 +340,6 @@ body.dark-mode .color-settings-toolbar {
     font-size: 0.75em;
     padding: 4px 8px;
     margin-top: 8px;
-    /* Styling wie die anderen Control-Buttons für Konsistenz */
 }
 
 .node-color-pickers { display: flex; flex-direction: column; align-items: flex-start; font-size: 0.85em; }
@@ -317,7 +347,51 @@ body.dark-mode .color-settings-toolbar {
 .node-color-pickers label { margin-right: 8px; min-width: 50px; color: var(--text-color); }
 .node-color-pickers input[type="color"] { width: 28px; height: 22px; border: 1px solid var(--mindmap-border); padding: 0; cursor: pointer; border-radius: 3px; }
 
-/* --- Toast Notification --- */
+.node-toggle-colors-btn {
+    display: none;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    padding: 0;
+    background-color: rgba(128, 128, 128, 0.3);
+    color: var(--text-color);
+    border: 1px solid rgba(180, 180, 180, 0.5);
+    border-radius: 50%;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    z-index: 25;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+.node.selected .node-toggle-colors-btn,
+.node.color-controls-active .node-toggle-colors-btn {
+    display: flex;
+    opacity: 1;
+    background-color: rgba(100, 100, 100, 0.7);
+}
+
+body.dark-mode .node.selected .node-toggle-colors-btn,
+body.dark-mode .node.color-controls-active .node-toggle-colors-btn {
+    background-color: rgba(120, 120, 120, 0.7);
+}
+
+body.dark-mode .node-toggle-colors-btn {
+    background-color: rgba(80, 80, 80, 0.3);
+    border-color: rgba(100, 100, 100, 0.5);
+    color: var(--text-color);
+}
+
+.node-toggle-colors-btn:hover {
+    background-color: rgba(80, 80, 80, 0.9);
+}
+body.dark-mode .node-toggle-colors-btn:hover {
+    background-color: rgba(140, 140, 140, 0.9);
+}
+
 .toast {
     visibility: hidden;
     min-width: 200px;
