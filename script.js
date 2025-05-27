@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const toggleColorControlsBtn = document.createElement('button');
         toggleColorControlsBtn.classList.add('node-toggle-colors-btn');
-        toggleColorControlsBtn.innerHTML = '🎨';
+        toggleColorControlsBtn.innerHTML = '+'; // GEÄNDERT
         toggleColorControlsBtn.title = 'Toggle color settings';
         toggleColorControlsBtn.addEventListener('click', (e) => {
             e.stopPropagation();
