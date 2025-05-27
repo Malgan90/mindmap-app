@@ -13,16 +13,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const screenshotFormatSelect = document.getElementById('screenshotFormatSelect');
     const toastNotification = document.getElementById('toast-notification');
     const resetDefaultColorsBtn = document.getElementById('resetDefaultColorsBtn');
+
+    const mindmapWrapper = document.getElementById('mindmap-wrapper');
+
     let toastTimeout;
 
-    // CSS Variablen Namen (müssen mit CSS :root Definitionen übereinstimmen)
     const CSS_VAR_NODE_DEFAULT_BG = '--node-default-bg';
     const CSS_VAR_NODE_DEFAULT_TEXT = '--node-default-text';
-    const CSS_VAR_MINDMAP_BG = '--mindmap-bg'; // Für Screenshot Hintergrund
+    const CSS_VAR_MINDMAP_BG = '--mindmap-bg';
 
-    // Ursprüngliche Default-Werte (Light Mode) aus den HTML input value Attributen
-    const initialLightModeNodeColor = defaultNodeColorPicker.value;
-    const initialLightModeTextColor = defaultTextColorPicker.value;
+    // IMPORTANT: These values should match the defaults in style.css :root and body.dark-mode
+    const LIGHT_MODE_DEFAULTS = {
+        nodeBg: '#add8e6', // Matches --node-default-bg in :root
+        nodeText: '#000000' // Matches --node-default-text in :root
+    };
+    const DARK_MODE_DEFAULTS = {
+        nodeBg: '#586776', // Matches --node-default-bg in body.dark-mode
+        nodeText: '#f1f1f1' // Matches --node-default-text in body.dark-mode
+    };
 
     const shortcutWindow = document.getElementById('shortcut-window');
     const shortcutHeader = shortcutWindow.querySelector('.shortcut-header');
@@ -39,7 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let dragOffsetX, dragOffsetY;
     let currentDragTargetInfo = { type: null, id: null, lineElement: null, lineParentId: null, lineChildId: null };
 
-    // --- Dark Mode Logik ---
+    function updateCSSVariablesFromPickers() {
+        document.documentElement.style.setProperty(CSS_VAR_NODE_DEFAULT_BG, defaultNodeColorPicker.value);
+        document.documentElement.style.setProperty(CSS_VAR_NODE_DEFAULT_TEXT, defaultTextColorPicker.value);
+    }
+
     function applyDarkModePreference() {
         const isDarkMode = localStorage.getItem('darkMode') === 'true';
         document.body.classList.toggle('dark-mode', isDarkMode);
@@ -48,38 +60,26 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleDarkModeBtn.title = isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode';
         }
 
-        // Setze die globalen Farbpicker auf die Defaults des aktuellen Themes
-        // Dies liest die Werte, die im CSS für :root oder body.dark-mode definiert sind
-        const currentThemeNodeBg = getComputedStyle(document.documentElement).getPropertyValue(CSS_VAR_NODE_DEFAULT_BG).trim();
-        const currentThemeNodeText = getComputedStyle(document.documentElement).getPropertyValue(CSS_VAR_NODE_DEFAULT_TEXT).trim();
+        const currentThemeDefaults = isDarkMode ? DARK_MODE_DEFAULTS : LIGHT_MODE_DEFAULTS;
+        defaultNodeColorPicker.value = currentThemeDefaults.nodeBg;
+        defaultTextColorPicker.value = currentThemeDefaults.nodeText;
         
-        defaultNodeColorPicker.value = currentThemeNodeBg;
-        defaultTextColorPicker.value = currentThemeNodeText;
-        // Die 'input' Event Listener der Picker sind nicht nötig, da die CSS Variablen bereits die Quelle der Wahrheit sind.
-        // Aber wenn der User die Picker direkt ändert, müssen die CSS Variablen aktualisiert werden.
-    }
-    
-    // Funktion zum Aktualisieren der CSS Variablen, wenn Picker geändert werden
-    function updateCSSVariablesFromPickers() {
-        document.documentElement.style.setProperty(CSS_VAR_NODE_DEFAULT_BG, defaultNodeColorPicker.value);
-        document.documentElement.style.setProperty(CSS_VAR_NODE_DEFAULT_TEXT, defaultTextColorPicker.value);
+        // Ensure the CSS variables for defaults are also set to the theme's actual defaults
+        updateCSSVariablesFromPickers();
     }
 
     if (toggleDarkModeBtn) {
         toggleDarkModeBtn.addEventListener('click', () => {
             const isCurrentlyDark = document.body.classList.contains('dark-mode');
             localStorage.setItem('darkMode', !isCurrentlyDark);
-            applyDarkModePreference(); // Wendet Klassen an und aktualisiert Picker auf Theme-Defaults
+            applyDarkModePreference();
         });
     }
-    
-    // Listener für globale Picker, um CSS Variablen zu aktualisieren
+
     defaultNodeColorPicker.addEventListener('input', updateCSSVariablesFromPickers);
     defaultTextColorPicker.addEventListener('input', updateCSSVariablesFromPickers);
-
-    // Initial Dark Mode anwenden
-    applyDarkModePreference();
-    // --- Ende Dark Mode Logik ---
+    
+    applyDarkModePreference(); // Call initially to set up theme and default colors
 
     function createNodeElement(nodeData) {
         const nodeDiv = document.createElement('div');
@@ -95,16 +95,20 @@ document.addEventListener('DOMContentLoaded', () => {
         textInput.classList.add('node-text-input');
         textInput.value = nodeData.text;
         textInput.style.color = nodeData.textColor;
-        textInput.addEventListener('change', (e) => { nodeData.text = e.target.value; });
         textInput.addEventListener('mousedown', (e) => e.stopPropagation());
         textInput.addEventListener('focus', (e) => e.target.select());
-        textInput.addEventListener('keydown', (e) => { 
-            e.stopPropagation(); 
-            if (e.key === 'Enter' || e.key === 'Escape') textInput.blur(); 
+        textInput.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter' || e.key === 'Escape') textInput.blur();
+        });
+        textInput.addEventListener('change', (e) => {
+            nodeData.text = e.target.value;
         });
 
         const controlsDiv = document.createElement('div');
         controlsDiv.classList.add('node-controls');
+        controlsDiv.addEventListener('mousedown', e => e.stopPropagation());
+
         const buttonsRow = document.createElement('div');
         buttonsRow.classList.add('buttons-row');
         const addChildBtn = document.createElement('button');
@@ -115,6 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         deleteBtn.textContent = '🗑️';
         deleteBtn.title = 'Delete this node';
         deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteNode(nodeData.id); });
+
         buttonsRow.appendChild(addChildBtn);
         buttonsRow.appendChild(deleteBtn);
         controlsDiv.appendChild(buttonsRow);
@@ -133,7 +138,6 @@ document.addEventListener('DOMContentLoaded', () => {
             nodeDiv.style.backgroundColor = nodeData.bgColor;
             nodeDiv.style.borderColor = getDarkerColor(nodeData.bgColor);
         });
-        nodeBgColorInput.addEventListener('mousedown', e => e.stopPropagation());
         bgColorDiv.appendChild(bgColorLabel);
         bgColorDiv.appendChild(nodeBgColorInput);
         nodeColorPickersDiv.appendChild(bgColorDiv);
@@ -149,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
             nodeData.textColor = e.target.value;
             textInput.style.color = nodeData.textColor;
         });
-        nodeTextColorInput.addEventListener('mousedown', e => e.stopPropagation());
         textColorDiv.appendChild(textColorLabel);
         textColorDiv.appendChild(nodeTextColorInput);
         nodeColorPickersDiv.appendChild(textColorDiv);
@@ -158,12 +161,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const resetColorsBtn = document.createElement('button');
         resetColorsBtn.textContent = 'Reset Colors';
         resetColorsBtn.classList.add('reset-colors-btn');
-        resetColorsBtn.title = 'Reset colors to current theme default';
-        resetColorsBtn.addEventListener('click', (e) => { e.stopPropagation(); resetNodeColors(nodeData, nodeDiv, textInput); });
+        resetColorsBtn.title = 'Reset colors to theme default'; // MODIFIED TITLE
+        resetColorsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetNodeColors(nodeData, nodeDiv, textInput);
+        });
         controlsDiv.appendChild(resetColorsBtn);
+
+        const toggleColorControlsBtn = document.createElement('button');
+        toggleColorControlsBtn.classList.add('node-toggle-colors-btn');
+        toggleColorControlsBtn.innerHTML = '🎨';
+        toggleColorControlsBtn.title = 'Toggle color settings';
+        toggleColorControlsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const parentNodeElement = e.currentTarget.closest('.node');
+            if (!parentNodeElement) return;
+            const isCurrentlyActive = parentNodeElement.classList.contains('color-controls-active');
+            document.querySelectorAll('.node.color-controls-active').forEach(n => {
+                if (n !== parentNodeElement) {
+                    n.classList.remove('color-controls-active');
+                }
+            });
+            parentNodeElement.classList.toggle('color-controls-active', !isCurrentlyActive);
+        });
+        toggleColorControlsBtn.addEventListener('mousedown', e => e.stopPropagation());
 
         nodeDiv.appendChild(textInput);
         nodeDiv.appendChild(controlsDiv);
+        nodeDiv.appendChild(toggleColorControlsBtn);
+
         nodeDiv.addEventListener('mousedown', handleNodeMouseDown);
         nodeDiv.addEventListener('click', handleNodeClick);
         nodeData.element = nodeDiv;
@@ -171,8 +197,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function resetNodeColors(nodeData, nodeDivElement, textInputElement) {
-        nodeData.bgColor = defaultNodeColorPicker.value; // Nimmt aktuellen Wert des globalen Pickers
-        nodeData.textColor = defaultTextColorPicker.value; // Nimmt aktuellen Wert des globalen Pickers
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const themeDefaults = isDarkMode ? DARK_MODE_DEFAULTS : LIGHT_MODE_DEFAULTS;
+
+        nodeData.bgColor = themeDefaults.nodeBg;
+        nodeData.textColor = themeDefaults.nodeText;
 
         nodeDivElement.style.backgroundColor = nodeData.bgColor;
         nodeDivElement.style.borderColor = getDarkerColor(nodeData.bgColor);
@@ -190,33 +219,34 @@ document.addEventListener('DOMContentLoaded', () => {
     function addNode(parentId = null, initialProps = {}) {
         nodeIdCounter++;
         const newNodeId = `node-${nodeIdCounter}`;
-        let x = initialProps.x || 50, y = initialProps.y || 50, text = initialProps.text || 'New Idea';
-        
-        // Nimmt Default-Farben aus den globalen Pickern (die durch Dark Mode beeinflusst werden)
+        let x = initialProps.x !== undefined ? initialProps.x : 50;
+        let y = initialProps.y !== undefined ? initialProps.y : 50;
+        let text = initialProps.text || 'New Idea';
+
+        // New nodes use the current default picker values from the toolbar
         const bgColor = initialProps.bgColor || defaultNodeColorPicker.value;
         const textColor = initialProps.textColor || defaultTextColorPicker.value;
-        
+
         const tempElement = createDummyNodeElement(text);
-        let nodeWidth = Math.max(100, tempElement.offsetWidth); // Mindestbreite 100px (aus CSS)
-        let nodeHeight = Math.max(100, tempElement.offsetHeight); // Mindesthöhe 100px für runde Nodes
+        let nodeWidth = Math.max(100, tempElement.offsetWidth);
+        let nodeHeight = Math.max(100, tempElement.offsetHeight);
         tempElement.remove();
 
         if (parentId) {
             const parent = nodes.find(n => n.id === parentId);
             if (parent && parent.element) {
-                const parentRect = parent.element.getBoundingClientRect();
-                x = parent.x + parentRect.width + 30 + Math.random() * 20;
-                y = parent.y + (parentRect.height / 2) - (nodeHeight / 2) + Math.random() * 40 - 20;
+                x = parent.x + parent.element.offsetWidth + 30;
+                y = parent.y + (parent.element.offsetHeight / 2) - (nodeHeight / 2);
             }
-        } else { 
+        } else {
             const rootNodes = nodes.filter(n => !n.parentId);
-            x = 50 + rootNodes.length * 20; 
+            x = 50 + rootNodes.length * 20;
             y = 50 + rootNodes.length * 20;
         }
-        
-        x = Math.max(10, Math.min(x, mindmapContainer.scrollWidth - nodeWidth - 10));
-        y = Math.max(10, Math.min(y, mindmapContainer.scrollHeight - nodeHeight - 10));
-        
+
+        x = Math.max(0, Math.min(x, mindmapContainer.scrollWidth - nodeWidth - 10));
+        y = Math.max(0, Math.min(y, mindmapContainer.scrollHeight - nodeHeight - 10));
+
         const newNodeData = { id: newNodeId, text, x, y, parentId, bgColor, textColor, childrenIds: [], element: null };
         nodes.push(newNodeData);
         if (parentId) {
@@ -226,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nodeElement = createNodeElement(newNodeData);
         mindmapContainer.appendChild(nodeElement);
         drawLines();
-        selectNode(newNodeId); 
+        selectNode(newNodeId);
         const newInput = nodeElement.querySelector('.node-text-input');
         if (newInput) newInput.focus();
         return newNodeData;
@@ -236,11 +266,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const nodeToDelete = nodes.find(n => n.id === nodeId);
         if (!nodeToDelete) return;
         [...nodeToDelete.childrenIds].forEach(childId => deleteNode(childId));
+
         if (nodeToDelete.parentId) {
             const parent = nodes.find(n => n.id === nodeToDelete.parentId);
             if (parent) parent.childrenIds = parent.childrenIds.filter(id => id !== nodeId);
         }
-        if (nodeToDelete.element) nodeToDelete.element.remove();
+        if (nodeToDelete.element) {
+            nodeToDelete.element.classList.remove('color-controls-active');
+            nodeToDelete.element.remove();
+        }
         nodes = nodes.filter(n => n.id !== nodeId);
         if (selectedNodeId === nodeId) {
             const newSelectedId = nodeToDelete.parentId ? nodeToDelete.parentId : (nodes.length > 0 ? nodes[0].id : null);
@@ -249,8 +283,16 @@ document.addEventListener('DOMContentLoaded', () => {
         drawLines();
     }
 
-    function handleNodeClick(e) { e.stopPropagation(); const nodeId = e.currentTarget.id; selectNode(nodeId); }
-    
+    function handleNodeClick(e) {
+        if (e.target.classList.contains('node-toggle-colors-btn')) {
+            e.stopPropagation();
+            return;
+        }
+        e.stopPropagation();
+        const nodeId = e.currentTarget.id;
+        selectNode(nodeId);
+    }
+
     function selectNode(nodeIdToSelect) {
         if (selectedNodeId && selectedNodeId !== nodeIdToSelect) {
             const oldSelectedNodeElement = document.getElementById(selectedNodeId);
@@ -263,7 +305,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    mindmapContainer.addEventListener('click', (e) => { if (e.target === mindmapContainer) selectNode(null); });
+    mindmapContainer.addEventListener('click', (e) => {
+        if (e.target === mindmapContainer) {
+            selectNode(null);
+            document.querySelectorAll('.node.color-controls-active').forEach(n => {
+                n.classList.remove('color-controls-active');
+            });
+        }
+    });
+    mindmapWrapper.addEventListener('click', (e) => {
+        if (e.target === mindmapWrapper) {
+            selectNode(null);
+            document.querySelectorAll('.node.color-controls-active').forEach(n => {
+                n.classList.remove('color-controls-active');
+            });
+        }
+    });
 
     function drawLines() {
         svg.innerHTML = '';
@@ -272,36 +329,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 const parentNode = nodes.find(p => p.id === node.parentId);
                 if (parentNode && parentNode.element && node.element) {
                     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                    const pRect = parentNode.element.getBoundingClientRect();
-                    const cRect = node.element.getBoundingClientRect();
-                    const containerRect = mindmapContainer.getBoundingClientRect();
-                    const x1 = (pRect.left - containerRect.left + pRect.width / 2) + mindmapContainer.scrollLeft;
-                    const y1 = (pRect.top - containerRect.top + pRect.height / 2) + mindmapContainer.scrollTop;
-                    const x2 = (cRect.left - containerRect.left + cRect.width / 2) + mindmapContainer.scrollLeft;
-                    const y2 = (cRect.top - containerRect.top + cRect.height / 2) + mindmapContainer.scrollTop;
-                    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
-                    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-                    // Linienfarbe wird jetzt durch CSS Variable '--line-color' in #mindmap-svg line gesteuert
-                    line.setAttribute('stroke-width', '2');
-                    line.dataset.parentId = parentNode.id; line.dataset.childId = node.id;
+
+                    const pX = parentNode.x + (parentNode.element.offsetWidth / 2);
+                    const pY = parentNode.y + (parentNode.element.offsetHeight / 2);
+                    const cX = node.x + (node.element.offsetWidth / 2);
+                    const cY = node.y + (node.element.offsetHeight / 2);
+
+                    line.setAttribute('x1', pX);
+                    line.setAttribute('y1', pY);
+                    line.setAttribute('x2', cX);
+                    line.setAttribute('y2', cY);
+                    line.dataset.parentId = parentNode.id;
+                    line.dataset.childId = node.id;
                     svg.appendChild(line);
                 }
             }
         });
     }
     window.addEventListener('resize', drawLines);
-    mindmapContainer.addEventListener('scroll', drawLines);
+    mindmapWrapper.addEventListener('scroll', drawLines);
 
     function handleNodeMouseDown(e) {
-        if (e.target.tagName === 'INPUT' || e.target.closest('button') || e.target.closest('.node-controls input[type="color"]')) return;
+        if (e.target.tagName === 'INPUT' ||
+            e.target.closest('button') ||
+            e.target.closest('.node-controls') ||
+            e.target.closest('.node-color-pickers input[type="color"]')) {
+            return;
+        }
         activeDragNodeData = nodes.find(n => n.id === e.currentTarget.id);
         if (!activeDragNodeData || !activeDragNodeData.element) { activeDragNodeData = null; return; }
         e.stopPropagation();
         selectNode(activeDragNodeData.id);
+        if (activeDragNodeData.element.classList.contains('color-controls-active')) {
+            activeDragNodeData.element.classList.remove('color-controls-active');
+        }
         activeDragNodeData.element.classList.add('dragging');
-        const rect = activeDragNodeData.element.getBoundingClientRect();
-        const containerRect = mindmapContainer.getBoundingClientRect();
-        dragOffsetX = e.clientX - rect.left; dragOffsetY = e.clientY - rect.top;
+
+        const mouseViewportX = e.clientX;
+        const mouseViewportY = e.clientY;
+        const nodeViewportRect = activeDragNodeData.element.getBoundingClientRect();
+        dragOffsetX = mouseViewportX - nodeViewportRect.left;
+        dragOffsetY = mouseViewportY - nodeViewportRect.top;
+
         document.addEventListener('mousemove', handleDocumentMouseMove);
         document.addEventListener('mouseup', handleDocumentMouseUp, { once: true });
     }
@@ -309,21 +378,35 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleDocumentMouseMove(e) {
         if (!activeDragNodeData || !activeDragNodeData.element) { cleanupGlobalDragListeners(); return; }
         e.preventDefault();
-        const containerRect = mindmapContainer.getBoundingClientRect();
-        let newX = e.clientX - containerRect.left - dragOffsetX + mindmapContainer.scrollLeft;
-        let newY = e.clientY - containerRect.top - dragOffsetY + mindmapContainer.scrollTop;
+
+        const containerViewportRect = mindmapContainer.getBoundingClientRect();
+        const newNodeViewportX = e.clientX - dragOffsetX;
+        const newNodeViewportY = e.clientY - dragOffsetY;
+
+        let newX = newNodeViewportX - containerViewportRect.left + mindmapWrapper.scrollLeft;
+        let newY = newNodeViewportY - containerViewportRect.top + mindmapWrapper.scrollTop;
+
         const nodeWidth = activeDragNodeData.element.offsetWidth;
         const nodeHeight = activeDragNodeData.element.offsetHeight;
-        newX = Math.max(0, Math.min(newX, mindmapContainer.scrollWidth - nodeWidth));
-        newY = Math.max(0, Math.min(newY, mindmapContainer.scrollHeight - nodeHeight));
-        activeDragNodeData.x = newX; activeDragNodeData.y = newY;
-        activeDragNodeData.element.style.left = `${newX}px`; activeDragNodeData.element.style.top = `${newY}px`;
+
+        const maxScrollX = mindmapContainer.scrollWidth - nodeWidth;
+        const maxScrollY = mindmapContainer.scrollHeight - nodeHeight;
+        newX = Math.max(0, Math.min(newX, maxScrollX < 0 ? 0 : maxScrollX));
+        newY = Math.max(0, Math.min(newY, maxScrollY < 0 ? 0 : maxScrollY));
+
+        activeDragNodeData.x = newX;
+        activeDragNodeData.y = newY;
+        activeDragNodeData.element.style.left = `${newX}px`;
+        activeDragNodeData.element.style.top = `${newY}px`;
         drawLines();
+
         clearAllHighlights();
         currentDragTargetInfo = { type: null, id: null, lineElement: null, lineParentId: null, lineChildId: null };
-        const dropPointElemX = activeDragNodeData.element.getBoundingClientRect().left + nodeWidth / 2;
-        const dropPointElemY = activeDragNodeData.element.getBoundingClientRect().top + nodeHeight / 2;
+        const draggedNodeRect = activeDragNodeData.element.getBoundingClientRect();
+        const dropPointElemX = draggedNodeRect.left + (draggedNodeRect.width / 2);
+        const dropPointElemY = draggedNodeRect.top + (draggedNodeRect.height / 2);
         const elementsUnderDropPoint = document.elementsFromPoint(dropPointElemX, dropPointElemY);
+
         let foundNodeTarget = false;
         for (const el of elementsUnderDropPoint) {
             if (el.classList && el.classList.contains('node') && el.id !== activeDragNodeData.id) {
@@ -336,7 +419,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         if (!foundNodeTarget) {
-            const dropPointSvgX = newX + nodeWidth / 2; const dropPointSvgY = newY + nodeHeight / 2;
+            const svgRect = svg.getBoundingClientRect();
+            const dropPointSvgX = dropPointElemX - svgRect.left;
+            const dropPointSvgY = dropPointElemY - svgRect.top;
+
             const allLines = Array.from(svg.querySelectorAll('line'));
             for (const line of allLines) {
                 const linePId = line.dataset.parentId; const lineCId = line.dataset.childId;
@@ -351,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-    
+
     function isPointNearLine(px, py, x1, y1, x2, y2, tolerance) {
         const lenSq = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
         if (lenSq === 0) return Math.sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1)) < tolerance;
@@ -385,7 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (oldParentOfDragged) oldParentOfDragged.childrenIds = oldParentOfDragged.childrenIds.filter(id => id !== activeDragNodeData.id);
                     }
                     activeDragNodeData.parentId = originalParentOfLine.id;
-                    if(!originalParentOfLine.childrenIds.includes(activeDragNodeData.id)) originalParentOfLine.childrenIds.push(activeDragNodeData.id);
+                    if (!originalParentOfLine.childrenIds.includes(activeDragNodeData.id)) originalParentOfLine.childrenIds.push(activeDragNodeData.id);
                     originalParentOfLine.childrenIds = originalParentOfLine.childrenIds.filter(id => id !== originalChildOfLine.id);
                     originalChildOfLine.parentId = activeDragNodeData.id;
                     if (!activeDragNodeData.childrenIds.includes(originalChildOfLine.id)) activeDragNodeData.childrenIds.push(originalChildOfLine.id);
@@ -397,7 +483,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function cleanupGlobalDragListeners() {
-        if (activeDragNodeData && activeDragNodeData.element && activeDragNodeData.element.classList.contains('dragging')) activeDragNodeData.element.classList.remove('dragging');
+        if (activeDragNodeData && activeDragNodeData.element && activeDragNodeData.element.classList.contains('dragging')) {
+            activeDragNodeData.element.classList.remove('dragging');
+        }
         activeDragNodeData = null;
         currentDragTargetInfo = { type: null, id: null, lineElement: null, lineParentId: null, lineChildId: null };
         document.removeEventListener('mousemove', handleDocumentMouseMove);
@@ -420,17 +508,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getDarkerColor(hex) {
         if (!hex || hex.length < 7) return '#000000';
-        let r = parseInt(hex.slice(1,3),16); let g = parseInt(hex.slice(3,5),16); let b = parseInt(hex.slice(5,7),16);
-        r = Math.max(0, r - 40); g = Math.max(0, g - 40); b = Math.max(0, b - 40);
-        return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+        try {
+            let r = parseInt(hex.slice(1, 3), 16); let g = parseInt(hex.slice(3, 5), 16); let b = parseInt(hex.slice(5, 7), 16);
+            r = Math.max(0, r - 40); g = Math.max(0, g - 40); b = Math.max(0, b - 40);
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        } catch (e) { return '#000000'; }
     }
 
     function createDummyNodeElement(text) {
         const dummyDiv = document.createElement('div');
         dummyDiv.classList.add('node');
-        dummyDiv.style.cssText = 'position:absolute; visibility:hidden; left:-10000px; top:-10000px; min-width:100px; min-height:100px;'; // Wichtig: min-Größen aus CSS
+        dummyDiv.style.cssText = `position:absolute; visibility:hidden; left:-10000px; top:-10000px; min-width:100px; padding: 10px; box-sizing:border-box; min-height: 100px;`;
         const dummyInput = document.createElement('input');
-        dummyInput.classList.add('node-text-input'); dummyInput.value = text;
+        dummyInput.classList.add('node-text-input');
+        dummyInput.style.width = '90%';
+        dummyInput.style.fontSize = '1em';
+        dummyInput.value = text;
         dummyDiv.appendChild(dummyInput);
         document.body.appendChild(dummyDiv);
         return dummyDiv;
@@ -442,20 +535,18 @@ document.addEventListener('DOMContentLoaded', () => {
         toastTimeout = setTimeout(() => { toastNotification.classList.remove('show'); }, 3000);
     }
 
-    function toggleShortcutVisibility() { shortcutWindow.classList.toggle('hidden');}
-    
+    function toggleShortcutVisibility() { shortcutWindow.classList.toggle('hidden'); }
+
     function handleResetDefaultColors() {
-        // Setzt die Picker auf die im CSS definierten Default-Werte für das aktuelle Theme
-        const currentThemeNodeBg = getComputedStyle(document.documentElement).getPropertyValue(CSS_VAR_NODE_DEFAULT_BG).trim();
-        const currentThemeNodeText = getComputedStyle(document.documentElement).getPropertyValue(CSS_VAR_NODE_DEFAULT_TEXT).trim();
-        defaultNodeColorPicker.value = currentThemeNodeBg;
-        defaultTextColorPicker.value = currentThemeNodeText;
-        // Die CSS Variablen selbst müssen nicht manuell gesetzt werden, da die Picker-Werte
-        // direkt die Quelle für neue Nodes sind und die CSS Variablen die Defaults für die Picker definieren.
-        // Wenn der User die Picker ändert, werden die CSS-Variablen über updateCSSVariablesFromPickers() aktualisiert.
+        // This function now correctly resets the toolbar pickers to the theme's true defaults.
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const currentThemeDefaults = isDarkMode ? DARK_MODE_DEFAULTS : LIGHT_MODE_DEFAULTS;
+
+        defaultNodeColorPicker.value = currentThemeDefaults.nodeBg;
+        defaultTextColorPicker.value = currentThemeDefaults.nodeText;
+        updateCSSVariablesFromPickers(); // This sets the inline styles on :root to the theme's defaults
         showToast("Default colors reset to current theme's defaults.");
     }
-
 
     toggleShortcutBtn.addEventListener('click', toggleShortcutVisibility);
     closeShortcutBtn.addEventListener('click', () => { shortcutWindow.classList.add('hidden'); });
@@ -465,14 +556,14 @@ document.addEventListener('DOMContentLoaded', () => {
         shortcutWindowDragX = e.clientX - shortcutWindow.offsetLeft; shortcutWindowDragY = e.clientY - shortcutWindow.offsetTop;
         shortcutWindow.style.cursor = 'grabbing';
         document.addEventListener('mousemove', dragShortcutWindow);
-        document.addEventListener('mouseup', stopDragOrResizeShortcutWindow, {once: true});
+        document.addEventListener('mouseup', stopDragOrResizeShortcutWindow, { once: true });
     });
     resizeHandle.addEventListener('mousedown', (e) => {
         e.stopPropagation(); isResizingShortcutWindow = true;
         shortcutWindowResizeStartX = e.clientX; shortcutWindowResizeStartY = e.clientY;
         shortcutWindowInitialWidth = shortcutWindow.offsetWidth; shortcutWindowInitialHeight = shortcutWindow.offsetHeight;
         document.addEventListener('mousemove', resizeShortcutWindow);
-        document.addEventListener('mouseup', stopDragOrResizeShortcutWindow, {once: true});
+        document.addEventListener('mouseup', stopDragOrResizeShortcutWindow, { once: true });
     });
     function dragShortcutWindow(e) {
         if (!isDraggingShortcutWindow) return;
@@ -497,9 +588,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function downloadMapData() {
         if (nodes.length === 0) { showToast("The mind map is empty."); return; }
-        const serializableNodes = nodes.map(n => ({ id: n.id, text: n.text, x: n.x, y: n.y, parentId: n.parentId, bgColor: n.bgColor, textColor: n.textColor, childrenIds: n.childrenIds }));
-        const dataStr = JSON.stringify({ nodes: serializableNodes, nodeIdCounter }, null, 2);
-        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const serializableState = {
+            nodes: nodes.map(n => ({ id: n.id, text: n.text, x: n.x, y: n.y, parentId: n.parentId, bgColor: n.bgColor, textColor: n.textColor, childrenIds: n.childrenIds })),
+            nodeIdCounter: nodeIdCounter,
+        };
+        const dataStr = JSON.stringify(serializableState, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
         const exportFileDefaultName = 'mindmap.json';
         let linkElement = document.createElement('a');
         linkElement.setAttribute('href', dataUri); linkElement.setAttribute('download', exportFileDefaultName);
@@ -510,46 +604,78 @@ document.addEventListener('DOMContentLoaded', () => {
     function captureMindmapCanvas(onSuccess, onError, onFinallyCallback) {
         if (nodes.length === 0) { showToast("The mind map is empty."); if (onError) onError("Mindmap empty"); return; }
         if (typeof html2canvas === 'undefined') { showToast('html2canvas library not loaded.'); if (onError) onError("html2canvas not loaded"); return; }
+
         const shortcutWindowWasVisible = !shortcutWindow.classList.contains('hidden');
         if (shortcutWindowWasVisible) shortcutWindow.classList.add('hidden');
+
         const previouslySelectedNodeId = selectedNodeId;
-        if (previouslySelectedNodeId) { const el = document.getElementById(previouslySelectedNodeId); if (el) el.classList.remove('selected'); }
-        document.querySelectorAll('.node-controls').forEach(el => el.style.display = 'none');
+        if (previouslySelectedNodeId) {
+            const el = document.getElementById(previouslySelectedNodeId);
+            if (el) el.classList.remove('selected');
+        }
+
+        const activeColorControls = [];
+        document.querySelectorAll('.node.color-controls-active').forEach(n => {
+            activeColorControls.push(n.id);
+            n.classList.remove('color-controls-active');
+        });
+        document.querySelectorAll('.node-toggle-colors-btn').forEach(btn => btn.style.display = 'none');
+
         const options = {
-            width: mindmapContainer.scrollWidth, height: mindmapContainer.scrollHeight,
-            windowWidth: mindmapContainer.scrollWidth, windowHeight: mindmapContainer.scrollHeight,
+            width: mindmapWrapper.scrollWidth,
+            height: mindmapWrapper.scrollHeight,
+            windowWidth: mindmapWrapper.scrollWidth,
+            windowHeight: mindmapWrapper.scrollHeight,
+            scrollX: -mindmapWrapper.scrollLeft,
+            scrollY: -mindmapWrapper.scrollTop,
             backgroundColor: getComputedStyle(document.documentElement).getPropertyValue(CSS_VAR_MINDMAP_BG).trim(),
-            logging: false, useCORS: true
+            logging: false, useCORS: true,
+            ignoreElements: (element) => {
+                return element.classList.contains('node-controls') || element.classList.contains('node-toggle-colors-btn');
+            }
         };
-        html2canvas(mindmapContainer, options)
+        html2canvas(mindmapWrapper, options)
             .then(canvas => { if (onSuccess) onSuccess(canvas); })
             .catch(err => { console.error("Screenshot capture error:", err); showToast("An error occurred while capturing the mind map."); if (onError) onError(err); })
             .finally(() => {
                 if (shortcutWindowWasVisible) shortcutWindow.classList.remove('hidden');
                 selectNode(previouslySelectedNodeId);
+
+                activeColorControls.forEach(nodeId => {
+                    const nodeEl = document.getElementById(nodeId);
+                    if (nodeEl) nodeEl.classList.add('color-controls-active');
+                });
+                document.querySelectorAll('.node-toggle-colors-btn').forEach(btn => {
+                    const nodeEl = btn.closest('.node');
+                    if (nodeEl && (nodeEl.classList.contains('selected') || nodeEl.classList.contains('color-controls-active'))) {
+                        btn.style.display = '';
+                    } else {
+                        btn.style.display = 'none';
+                    }
+                });
                 if (onFinallyCallback) onFinallyCallback();
             });
     }
 
     function screenshotToClipboard() {
-        captureMindmapCanvas( (canvas) => {
-                canvas.toBlob(async function(blob) {
-                    if (navigator.clipboard && navigator.clipboard.write) {
-                        try {
-                            const clipboardItem = new ClipboardItem({ 'image/png': blob });
-                            await navigator.clipboard.write([clipboardItem]);
-                            showToast('Screenshot (PNG) copied to clipboard!');
-                        } catch (err) { console.error('Failed to copy screenshot to clipboard:', err); showToast('Failed to copy to clipboard.'); }
-                    } else { showToast('Clipboard API not supported. Try downloading.'); }
-                }, 'image/png');
-            }
+        captureMindmapCanvas((canvas) => {
+            canvas.toBlob(async function (blob) {
+                if (navigator.clipboard && navigator.clipboard.write) {
+                    try {
+                        const clipboardItem = new ClipboardItem({ 'image/png': blob });
+                        await navigator.clipboard.write([clipboardItem]);
+                        showToast('Screenshot (PNG) copied to clipboard!');
+                    } catch (err) { console.error('Failed to copy screenshot to clipboard:', err); showToast('Failed to copy to clipboard.'); }
+                } else { showToast('Clipboard API not supported. Try downloading.'); }
+            }, 'image/png');
+        }
         );
     }
 
     function downloadScreenshot() {
         const format = screenshotFormatSelect.value;
         if (format === 'pdf' && (typeof jspdf === 'undefined' || typeof jspdf.jsPDF === 'undefined')) { showToast('jsPDF library not loaded for PDF.'); return; }
-        captureMindmapCanvas( (canvas) => { downloadCanvasImage(canvas, format); });
+        captureMindmapCanvas((canvas) => { downloadCanvasImage(canvas, format); });
     }
 
     function downloadCanvasImage(canvas, format = 'png') {
@@ -559,16 +685,18 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const PDFCreator = window.jspdf.jsPDF || (typeof jsPDF !== 'undefined' ? jsPDF : null);
                 if (!PDFCreator) { showToast("jsPDF not found. Downloading as PNG."); imageDataURL = canvas.toDataURL('image/png'); fileName = 'mindmap.png'; triggerDownload(imageDataURL, fileName); return; }
-                const orientation = canvas.width > canvas.height ? 'l' : 'p';
-                const pdf = new PDFCreator({ orientation: orientation, unit: 'px', format: [canvas.width, canvas.height] });
-                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+                const orientation = imgWidth > imgHeight ? 'l' : 'p';
+                const pdf = new PDFCreator({ orientation: orientation, unit: 'px', format: [imgWidth, imgHeight] });
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
                 pdf.save('mindmap.pdf'); showToast('PDF downloaded!'); return;
             } catch (e) { console.error("PDF error:", e); showToast("Error generating PDF. Downloading as PNG."); imageDataURL = canvas.toDataURL('image/png'); fileName = 'mindmap.png'; }
         } else imageDataURL = canvas.toDataURL('image/png');
         triggerDownload(imageDataURL, fileName);
     }
 
-    function triggerDownload(imageURL, fileName){
+    function triggerDownload(imageURL, fileName) {
         const link = document.createElement('a'); link.href = imageURL; link.download = fileName;
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
         showToast(`${fileName.split('.').pop().toUpperCase()} downloaded!`);
@@ -576,11 +704,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function clearMap() {
         nodes.forEach(n => { if (n.element) n.element.remove(); });
-        nodes = []; nodeIdCounter = 0; selectNode(null); drawLines(); showToast("Map cleared.");
+        nodes = []; nodeIdCounter = 0; selectNode(null);
+        document.querySelectorAll('.node.color-controls-active').forEach(n => {
+            n.classList.remove('color-controls-active');
+        });
+        drawLines();
+        showToast("Map cleared.");
     }
 
     mindmapContainer.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT') return;
+        if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.closest('.node-text-input')) {
+            if (e.key === 'Enter' || e.key === 'Escape') document.activeElement.blur();
+            return;
+        }
+        if (document.activeElement && document.activeElement.closest('.node-controls')) {
+            if (e.key === 'Escape') document.activeElement.blur();
+            return;
+        }
+
         if (e.altKey && e.key.toLowerCase() === 'h') { e.preventDefault(); toggleShortcutVisibility(); return; }
         if ((e.ctrlKey || e.metaKey)) {
             switch (e.key.toLowerCase()) {
@@ -588,17 +729,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'p': e.preventDefault(); if (e.shiftKey) downloadScreenshot(); else screenshotToClipboard(); return;
             }
         }
+
         if (!selectedNodeId && e.key.toLowerCase() !== 'r') return;
+
         switch (e.key.toLowerCase()) {
-            case 'enter': case 'tab':
-                if (selectedNodeId) { e.preventDefault(); if(e.shiftKey){ const s=nodes.find(n=>n.id===selectedNodeId); if(s) addNode(s.parentId); } else addNode(selectedNodeId); } break;
-            case 'delete': case 'backspace': if (selectedNodeId) { e.preventDefault(); deleteNode(selectedNodeId); } break;
-            case 'r': if(!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey){ e.preventDefault(); addNode(null); } break;
+            case 'enter':
+            case 'tab':
+                if (selectedNodeId) {
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        const sNode = nodes.find(n => n.id === selectedNodeId);
+                        if (sNode && sNode.parentId) addNode(sNode.parentId);
+                        else if (sNode && !sNode.parentId) addNode(null);
+                    } else {
+                        addNode(selectedNodeId);
+                    }
+                }
+                break;
+            case 'delete':
+            case 'backspace':
+                if (selectedNodeId) { e.preventDefault(); deleteNode(selectedNodeId); }
+                break;
+            case 'r':
+                if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) { e.preventDefault(); addNode(null); }
+                break;
         }
     });
 
     if (addRootNodeBtn) addRootNodeBtn.addEventListener('click', () => addNode(null));
-    if (clearMapBtn) clearMapBtn.addEventListener('click', clearMap);
+    if (clearMapBtn) clearMapBtn.addEventListener('click', () => clearMap());
     if (downloadMapBtn) downloadMapBtn.addEventListener('click', downloadMapData);
     if (screenshotToClipboardBtn) screenshotToClipboardBtn.addEventListener('click', screenshotToClipboard);
     if (downloadScreenshotBtn) downloadScreenshotBtn.addEventListener('click', downloadScreenshot);
