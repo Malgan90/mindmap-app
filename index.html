@@ -8,8 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
-<body> <!-- Die Klasse 'dark-mode' wird per JS hinzugefügt/entfernt -->
-    <div id="shortcut-window" class="draggable resizable hidden">
+<body>
+    <div id="shortcut-window" class="draggable resizable">
         <div class="shortcut-header">
             <h4>Shortcuts</h4>
             <button id="close-shortcut-btn" class="shortcut-close-btn" title="Close Shortcuts">X</button>
@@ -46,7 +46,6 @@
         </div>
 
         <button id="toggleShortcutBtn" title="Toggle Shortcuts Visibility (Alt+H)">Shortcuts</button>
-        
         <button id="toggleDarkModeBtn" title="Toggle Dark Mode">🌙</button> 
 
         <div class="color-settings-toolbar">
@@ -56,13 +55,14 @@
                 <label for="defaultTextColor">Text Color:</label>
                 <input type="color" id="defaultTextColor" value="#000000" title="Default text color for new nodes">
             </div>
-            <button id="resetDefaultColorsBtn" title="Reset default node and text colors">Reset Default Colors</button>
+            <button id="resetDefaultColorsBtn" title="Reset default node and text colors">Reset Colors</button>
         </div>
     </div>
 
-    <div id="mindmap-container" tabindex="0">
-        <svg id="mindmap-svg"></svg>
-        <!-- Nodes will be inserted here by JavaScript -->
+    <div id="mindmap-wrapper">
+        <div id="mindmap-container" tabindex="0">
+            <svg id="mindmap-svg"></svg>
+        </div>
     </div>
 
     <div id="toast-notification" class="toast"></div>
